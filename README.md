@@ -1,2 +1,3 @@
-# IST-ARA-Project
-This repository contains lab materials for the IST-ARA course. 
+# IST-ARA-Project: Sequential and distributed computation of routing paths across the internet
+
+This repository contains lab materials for the Network Algorithms and Applications IST course.
