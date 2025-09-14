@@ -3,7 +3,6 @@
 #include <stdio.h>
 
 #define forever for(;;)
-#define CLI_LINE_MAX 1024
 
 int main(int argc, char *argv[]) {
     char buffer[CLI_LINE_MAX];

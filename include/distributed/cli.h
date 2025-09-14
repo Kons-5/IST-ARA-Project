@@ -2,6 +2,7 @@
 #define CLI_H
 
 #include <stdbool.h>
+#define CLI_LINE_MAX 1024
 #define CLI_PATH_MAX 512
 
 typedef enum {
