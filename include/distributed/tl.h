@@ -1,4 +1,22 @@
 #ifndef TL_H
 #define TL_H
 
+#include <stdbool.h>
+
+typedef enum {
+    TL_INVALID = 0,
+    TL_CUSTOMER = 1,
+    TL_PEER = 2,
+    TL_PROVIDER = 3
+} link_type;
+
+typedef struct {
+    link_type type;
+    unsigned short len;
+} tl_type;
+
+bool tl_is_invalid(tl_type x);
+int tl_compare(tl_type a, tl_type b);
+tl_type tl_extend(link_type link_type_u_to_v, tl_type adv);
+
 #endif

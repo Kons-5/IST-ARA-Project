@@ -21,7 +21,7 @@ static void trim_line(char *s) {
     }
 }
 
-int cli_parse_line(char *s, cli_args *a) {
+cmd_type cli_parse_line(char *s, cli_args *a) {
     if (!s) return CLI_CMD_ERROR;
     trim_line(s);
 
