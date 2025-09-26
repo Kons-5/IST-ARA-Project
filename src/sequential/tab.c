@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static RoutingTable *add_adjancency(unsigned short u, unsigned short v, link_type type) {
+static RoutingTable *add_adjancency(unsigned short u, unsigned short v, tl_type tl) {
     RoutingTable *entry = (RoutingTable *) malloc(sizeof(RoutingTable));
     if (entry == NULL) {
         fprintf(stderr, "Error: out of memory for edge %hu->%hu\n", u, v);
@@ -12,8 +12,8 @@ static RoutingTable *add_adjancency(unsigned short u, unsigned short v, link_typ
     entry->next_hop = u;
     entry->destination = v;
     entry->type_length = (tl_type) {
-        .type = type,
-        .len = 1u,
+        .type = tl.type,
+        .len = tl.len,
     };
     entry->next = NULL;
 
@@ -28,13 +28,23 @@ void read_table(const char *path, unsigned short t, RoutingTable **tab, RoutingT
 
     unsigned short u, v, raw_type;
     while (fscanf(fp, "%hu %hu %hu\n", &u, &v, &raw_type) == 3) {
-        RoutingTable *tab_entry = add_adjancency(u, v, (link_type) raw_type);
+        tl_type tmp = (tl_type) {
+            .type = (link_type) raw_type,
+            .len = 1u,
+        };
+
+        RoutingTable *tab_entry = add_adjancency(u, v, tmp);
         if (tab_entry == NULL) {
             exit(1);
         }
 
         if (tab[u] == NULL) {
-            RoutingTable *entry = add_adjancency(u, t, TL_INVALID);
+            tl_type tmp = (tl_type) {
+                .type = TL_INVALID,
+                .len = 0u,
+            };
+
+            RoutingTable *entry = add_adjancency(u, t, tmp);
             if (entry == NULL) {
                 exit(1);
             }
