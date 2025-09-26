@@ -1,5 +1,5 @@
-#include "../../include/distributed/cli.h"
-#include "../../include/distributed/sim.h"
+#include "../../include/sequential/cli.h"
+#include "../../include/sequential/seq.h"
 #include <stdio.h>
 
 #define forever for(;;)
@@ -31,16 +31,12 @@ int main(int argc, char *argv[]) {
             case CLI_CMD_ERROR:
                 return 1;
 
-            case CLI_CMD_SIMUSIMPLE:
-                SimuSimple(args.path, args.t, args.d);
+            case CLI_CMD_STABLETYPELENGTH:
+                StableTypeLength(args.path, args.t);
                 break;
 
-            case CLI_CMD_SIMUCOMPLETE:
-                SimuComplete(args.path, args.t, args.d);
-                break;
-
-            case CLI_CMD_SIMUCOMPLETEALL:
-                SimuCompleteAll(args.path, args.d);
+            case CLI_CMD_STABLEALL:
+                StableAll(args.path);
                 break;
 
             default:
