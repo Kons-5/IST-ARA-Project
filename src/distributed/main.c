@@ -5,7 +5,7 @@
 #define forever for(;;)
 
 static inline void cli_prompt(void) {
-    printf("\x1b[?25h> ");
+    printf("\x1b[?25h$ ");
     fflush(stdout);
 }
 

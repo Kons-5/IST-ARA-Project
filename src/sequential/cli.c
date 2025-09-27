@@ -1,6 +1,8 @@
 #include "../../include/sequential/cli.h"
-#include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
 
 static void trim_line(char *s) {
     if (!s) return;
@@ -53,6 +55,11 @@ cmd_type cli_parse_line(char *s, cli_args *a) {
         if (sscanf(s, "StableAll( \"%511[^\"]\" ) %n", a->path, &n) == 3 && s[n] == '\0') {
             return CLI_CMD_STABLEALL;
         }
+
+        // OptimalAll("path/to/net")
+        if (sscanf(s, "OptimalAll( \"%511[^\"]\" ) %n", a->path, &n) == 3 && s[n] == '\0') {
+            return CLI_CMD_OPTIMALALL;
+        }
     }
 
     return CLI_CMD_UNKNOWN;
@@ -60,9 +67,17 @@ cmd_type cli_parse_line(char *s, cli_args *a) {
 
 void cli_print_usage(void) {
     fprintf(stdout, "\033[H\033[J");
+
+    char *pwd = getcwd(NULL, 0);
+    if (!pwd) pwd = "(unknown)";
+    fprintf(stdout, "Working directory:\n%s\n\n", pwd);
+    free(pwd);
+
     fprintf(stdout, "Available commands list: \n");
     fprintf(stdout, "> StableTypeLength(\"path/to/net\", t) \n");
+    fprintf(stdout, "> OptimalTypeLength(\"path/to/net\", t) \n");
     fprintf(stdout, "> StableAll(\"path/to/net\") \n");
+    fprintf(stdout, "> OptimalAll(\"path/to/net\") \n");
     fprintf(stdout, "> quit | exit | q \n");
     fprintf(stdout, "> help | ? \n\n");
 }

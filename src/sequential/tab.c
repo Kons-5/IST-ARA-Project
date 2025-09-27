@@ -1,4 +1,5 @@
 #include "../../include/sequential/tab.h"
+#include "../../include/sequential/viz.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -38,22 +39,30 @@ void read_table(const char *path, unsigned short t, RoutingTable **tab, RoutingT
             exit(1);
         }
 
+        // if the routing table is empty, also initialize Et
         if (tab[u] == NULL) {
             tl_type tmp = (tl_type) {
                 .type = TL_INVALID,
                 .len = 0u,
             };
 
-            RoutingTable *entry = add_adjancency(u, t, tmp);
-            if (entry == NULL) {
+            RoutingTable *stab_entry = add_adjancency(u, t, tmp);
+            if (stab_entry == NULL) {
                 exit(1);
             }
 
-            Et[u] = entry;
+            tab[u] = tab_entry;
+            Et[u] = stab_entry;
+        } else {
+            // insert new neighbor at the end
+            RoutingTable *tmp = tab[u];
+            RoutingTable *prev = NULL;
+            while (tmp != NULL) {
+                prev = tmp;
+                tmp = tmp->next;
+            }
+            prev->next = tab_entry;
         }
-
-        tab_entry->next = tab[u];
-        tab[u] = tab_entry;
     }
 
     fclose(fp);
@@ -76,20 +85,22 @@ void clear_table(RoutingTable **tab) {
 }
 
 void print_table(RoutingTable **tab) {
-    printf("--- Start of Routing Table ---\n");
+    printf("\n---> Start of Routing Table\n\n");
     for (unsigned short i = 0; i < 65535u; ++i) {
         RoutingTable *list = tab[i];
         if (list == NULL) {
             continue;
         }
 
-        printf("Node %hu:", i);
+        printf("AS %05u:", i);
         for (RoutingTable *p = list; p != NULL; p = p->next) {
-            printf(" (dest=%hu, hop=%hu, {type=%hu, len=%hu})",
-                p->destination, p->next_hop, p->type_length.type , p->type_length.len);
+            printf("\n(dest=%05u, {type=%hu, len=%hu}, hop=%05u)",
+                p->destination, p->type_length.type , p->type_length.len, p->next_hop);
         }
-        printf("\n");
+        printf("\n\n");
     }
-    printf("--- End of Routing Table ---\n");
+    printf("End of Routing Table <---\n");
     printf("\n");
+
+    visualize_table((void**)tab, "graph.png");
 }

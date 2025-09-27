@@ -13,6 +13,7 @@ typedef enum {
     CLI_CMD_STABLETYPELENGTH,
     CLI_CMD_OPTIMALTYPELENGTH,
     CLI_CMD_STABLEALL,
+    CLI_CMD_OPTIMALALL,
 } cmd_type;
 
 typedef struct {
