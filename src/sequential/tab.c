@@ -34,7 +34,7 @@ void read_table(const char *path, unsigned short t, RoutingTable **tab, RoutingT
             .len = 1u,
         };
 
-        RoutingTable *tab_entry = add_adjancency(u, v, tmp);
+        RoutingTable *tab_entry = add_adjancency(v, v, tmp);
         if (tab_entry == NULL) {
             exit(1);
         }
@@ -43,7 +43,7 @@ void read_table(const char *path, unsigned short t, RoutingTable **tab, RoutingT
         if (tab[u] == NULL) {
             tl_type tmp = (tl_type) {
                 .type = TL_INVALID,
-                .len = 0u,
+                .len = 65535u,
             };
 
             RoutingTable *stab_entry = add_adjancency(u, t, tmp);
