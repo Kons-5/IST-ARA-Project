@@ -3,6 +3,7 @@
 #include "../../include/sequential/tab.h"
 #include "../../include/sequential/tl.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 static bool any_nonempty(const Queue *a, const Queue *b, const Queue *c) {
     return !q_is_empty(a) || !q_is_empty(b) || !q_is_empty(c);
@@ -14,7 +15,6 @@ void StableTypeLength(const char *path, unsigned short t) {
     RoutingTable *E_t[65536] = {0};
     read_table(path, t, Table, E_t);
     print_table(Table, "Routing Table");
-    print_table(E_t, "Stable Routing");
 
     // Init queues for the three attribute types
     Queue *customerQ = q_create();
@@ -29,48 +29,50 @@ void StableTypeLength(const char *path, unsigned short t) {
     // BFS with our routing algebra
     bool discovered[65536] = {false};
     while (any_nonempty(customerQ, peerQ, providerQ)) {
-        unsigned short u;
+        unsigned short v;
 
         if (!q_is_empty(customerQ)) {
-            q_dequeue(customerQ, &u);
+            q_dequeue(customerQ, &v);
         } else if (!q_is_empty(peerQ)) {
-            q_dequeue(peerQ, &u);
+            q_dequeue(peerQ, &v);
         } else {
-            q_dequeue(providerQ, &u);
+            q_dequeue(providerQ, &v);
         }
 
-        if (discovered[u]) {
+        if (discovered[v]) {
             continue;
         } else {
-            discovered[u] = true;
+            discovered[v] = true;
         }
 
-        for (RoutingTable *e = Table[u]; e != NULL; e = e->next) {
-            unsigned short v = e->destination;
+        for (RoutingTable *e = Table[v]; e != NULL; e = e->next) {
+            unsigned short u = e->destination;
 
             // Relaxation
-            tl_type extension = tl_extend(e->type_length, E_t[v]->type_length);
-            printf("Edge: %hu %hu\n", e->type_length.type, e->type_length.len);
-            printf("Stable: %hu %hu\n", E_t[v]->type_length.type, E_t[v]->type_length.len);
-            printf("Extension: %hu %hu\n\n", extension.type, extension.len);
-
-            if (tl_compare_stable(E_t[u]->type_length, extension) >= 0) {
-                E_t[u]->type_length = extension;  // iff the extension is better
-                E_t[u]->next_hop = v;
+            RoutingTable *x = Table[u];
+            while (x && x->destination != v && x->next_hop != v) {
+                x = x->next;  // find v in u's routing table
             }
 
-            if (!discovered[v]) {
-                switch (e->type_length.type) {
+            tl_type extension = tl_extend(x->type_length, E_t[v]->type_length);
+            printf("%i\n", tl_compare_stable(E_t[v]->type_length, extension));
+            if (tl_compare_stable(E_t[v]->type_length, extension) >= 0) {
+                E_t[v]->type_length = extension;  // iff the extension is better
+                E_t[v]->next_hop = u;
+            }
+
+            if (!discovered[u]) {
+                switch (x->type_length.type) {
                     case TL_CUSTOMER:
-                        q_enqueue(providerQ, v);  // swap attribute
+                        q_enqueue(providerQ, u);  // swap attribute
                         break;
 
                     case TL_PEER:
-                        q_enqueue(peerQ, v);  // keep attribute
+                        q_enqueue(peerQ, u);  // keep attribute
                         break;
 
                     case TL_PROVIDER:
-                        q_enqueue(customerQ, v);  // swap attribute
+                        q_enqueue(customerQ, u);  // swap attribute
                         break;
 
                     default:

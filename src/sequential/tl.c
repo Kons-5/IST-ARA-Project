@@ -29,10 +29,6 @@ tl_type tl_extend(tl_type lt, tl_type adv) {
         return tl_invalid();
     }
 
-    if (lt.len == 65535u || adv.len == 65535u) {
-        return tl_invalid();
-    }
-
     if (lt.type == TL_PROVIDER || adv.type == TL_CUSTOMER) {
         tl_type r = {
             .type = lt.type,

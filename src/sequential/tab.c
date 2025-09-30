@@ -12,7 +12,7 @@ static RoutingTable *add_adjancency(unsigned short u, unsigned short v, tl_type 
 
     entry->next_hop = u;
     entry->destination = v;
-    entry->type_length = (tl_type){
+    entry->type_length = (tl_type) {
         .type = tl.type,
         .len = tl.len,
     };
@@ -29,7 +29,7 @@ void read_table(const char *path, unsigned short t, RoutingTable **tab, RoutingT
 
     unsigned short u, v, raw_type;
     while (fscanf(fp, "%hu %hu %hu\n", &u, &v, &raw_type) == 3) {
-        tl_type tmp = (tl_type){
+        tl_type tmp = (tl_type) {
             .type = (link_type) raw_type,
             .len = 1u,
         };
@@ -41,9 +41,9 @@ void read_table(const char *path, unsigned short t, RoutingTable **tab, RoutingT
 
         // if the routing table is empty, also initialize Et
         if (tab[u] == NULL) {
-            tl_type tmp = (tl_type){
+            tl_type tmp = (tl_type) {
                 .type = TL_INVALID,
-                .len = 65535u,
+                .len = 0u,
             };
 
             RoutingTable *stab_entry = add_adjancency(u, t, tmp);
