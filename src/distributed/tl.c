@@ -32,19 +32,15 @@ int tl_compare(tl_type a, tl_type b) {
     return 0;  // a == b
 }
 
-tl_type tl_extend(link_type lt, tl_type adv) {
-    if (tl_is_invalid(adv)) {
+tl_type tl_extend(tl_type lt, tl_type adv) {
+    if (tl_is_invalid(lt) || tl_is_invalid(adv)) {
         return tl_invalid();
     }
 
-    if (adv.len == 65535) {
-        return tl_invalid();
-    }
-
-    if (lt == TL_PROVIDER || adv.type == TL_CUSTOMER) {
+    if (lt.type == TL_PROVIDER || adv.type == TL_CUSTOMER) {
         tl_type r = {
-            .type = lt,
-            .len = adv.len + 1u,
+            .type = lt.type,
+            .len = adv.len + adv.len,
         };
         return r;
     }
