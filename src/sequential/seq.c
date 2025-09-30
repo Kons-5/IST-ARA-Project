@@ -16,7 +16,7 @@ void StableTypeLength(const char *path, unsigned short t) {
     read_table(path, t, Table, E_t);
     print_table(Table, "Routing Table");
 
-    // Init queues for the three attribute types
+    // Init queues for the three AS types
     Queue *customerQ = q_create();
     Queue *providerQ = q_create();
     Queue *peerQ = q_create();
@@ -26,11 +26,13 @@ void StableTypeLength(const char *path, unsigned short t) {
     E_t[t]->type_length.len = 0;
     q_enqueue(customerQ, t);
 
-    // BFS with our routing algebra
+    // Inverted BFS with our routing algebra
     bool discovered[65536] = {false};
     while (any_nonempty(customerQ, peerQ, providerQ)) {
         unsigned short v;
 
+        // Dequeue the next node v from the highest-priority non-empty queue.
+        // Priority encodes the best attribute: CUSTOMER < PEER < PROVIDER.
         if (!q_is_empty(customerQ)) {
             q_dequeue(customerQ, &v);
         } else if (!q_is_empty(peerQ)) {
@@ -39,6 +41,7 @@ void StableTypeLength(const char *path, unsigned short t) {
             q_dequeue(providerQ, &v);
         }
 
+        // Check if node v has been dequeued before
         if (discovered[v]) {
             continue;
         } else {
@@ -48,35 +51,36 @@ void StableTypeLength(const char *path, unsigned short t) {
         for (RoutingTable *e = Table[v]; e != NULL; e = e->next) {
             unsigned short u = e->destination;
 
-            // Relaxation
-            RoutingTable *x = Table[u];
-            while (x && x->destination != v && x->next_hop != v) {
-                x = x->next;  // find v in u's routing table
+
+            RoutingTable *l = Table[u];
+            while (l && l->destination != v && l->next_hop != v) {
+                l = l->next;  // find v in u's routing table, optimize to O(1)
             }
 
-            tl_type extension = tl_extend(x->type_length, E_t[v]->type_length);
-            printf("%i\n", tl_compare_stable(E_t[v]->type_length, extension));
-            if (tl_compare_stable(E_t[v]->type_length, extension) >= 0) {
-                E_t[v]->type_length = extension;  // iff the extension is better
-                E_t[v]->next_hop = u;
-            }
+            // Relaxation of u from v
+            tl_type extension = tl_extend(l->type_length, E_t[v]->type_length);
+            if (tl_compare_stable(E_t[u]->type_length, extension) >= 0) {
+                E_t[u]->type_length = extension;  // iff the extension is better
+                E_t[u]->next_hop = v;
 
-            if (!discovered[u]) {
-                switch (x->type_length.type) {
-                    case TL_CUSTOMER:
-                        q_enqueue(providerQ, u);  // swap attribute
-                        break;
+                if (!discovered[u]) {
+                    // Enqueue neighbor u in the queue from the POV of u
+                    switch (l->type_length.type) {
+                        case TL_CUSTOMER:
+                            q_enqueue(customerQ, u);
+                            break;
 
-                    case TL_PEER:
-                        q_enqueue(peerQ, u);  // keep attribute
-                        break;
+                        case TL_PEER:
+                            q_enqueue(peerQ, u);
+                            break;
 
-                    case TL_PROVIDER:
-                        q_enqueue(customerQ, u);  // swap attribute
-                        break;
+                        case TL_PROVIDER:
+                            q_enqueue(providerQ, u);
+                            break;
 
-                    default:
-                        continue;
+                        default:
+                            continue;
+                    }
                 }
             }
         }
