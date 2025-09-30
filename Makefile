@@ -4,7 +4,7 @@ CSTD := -std=gnu99
 WARN := -Wall -Werror -Wpedantic -Wconversion
 CFLAGS_COMMON := $(CSTD) $(WARN)
 CFLAGS_REL := $(CFLAGS_COMMON) -O3
-CFLAGS_DBG := $(CFLAGS_COMMON) -ggdb -Wextra
+CFLAGS_DBG := $(CFLAGS_COMMON) -ggdb
 LDFLAGS :=
 
 BIN_DIR := bin

@@ -2,7 +2,7 @@
 #include "../../include/sequential/seq.h"
 #include <stdio.h>
 
-#define forever for(;;)
+#define forever for (;;)
 
 static inline void cli_prompt(void) {
     printf("\x1b[?25h$ ");
@@ -28,6 +28,11 @@ int main(int argc, char *argv[]) {
                 cli_print_usage();
                 break;
 
+            case CLI_CMD_CLEAR:
+                printf("\x1b[2J\x1b[H");
+                fflush(stdout);
+                break;
+
             case CLI_CMD_ERROR:
                 return 1;
 
@@ -35,11 +40,20 @@ int main(int argc, char *argv[]) {
                 StableTypeLength(args.path, args.t);
                 break;
 
+            case CLI_CMD_OPTIMALTYPELENGTH:
+                OptimalTypeLength(args.path, args.t);
+                break;
+
             case CLI_CMD_STABLEALL:
                 StableAll(args.path);
                 break;
 
+            case CLI_CMD_OPTIMALALL:
+                OptimalAll(args.path);
+                break;
+
             default:
+                fprintf(stderr, "Unknown command: `%s'\n\n", buffer);
                 break;
         }
     }

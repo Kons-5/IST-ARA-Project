@@ -13,19 +13,23 @@ bool tl_is_invalid(tl_type x) {
 }
 
 int tl_compare(tl_type a, tl_type b) {
-    if (tl_is_invalid(a) && tl_is_invalid(b)) return 0;
-    if (tl_is_invalid(a)) return 1; // b wins
-    if (tl_is_invalid(b)) return -1; // a wins
+    if (tl_is_invalid(a) && tl_is_invalid(b)) {
+        return 0;  // both invalid
+    } else if (tl_is_invalid(a)) {
+        return 1;  // b wins
+    } else if (tl_is_invalid(b)) {
+        return -1;  // a wins
+    }
 
     if (a.type != b.type) {
         return (a.type < b.type) ? -1 : 1;
     }
 
     if (a.len != b.len) {
-        return (a.len < b.len ) ? -1 : 1;
+        return (a.len < b.len) ? -1 : 1;
     }
 
-    return 0; // a == b
+    return 0;  // a == b
 }
 
 tl_type tl_extend(link_type lt, tl_type adv) {

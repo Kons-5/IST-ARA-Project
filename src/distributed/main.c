@@ -2,7 +2,7 @@
 #include "../../include/distributed/sim.h"
 #include <stdio.h>
 
-#define forever for(;;)
+#define forever for (;;)
 
 static inline void cli_prompt(void) {
     printf("\x1b[?25h$ ");

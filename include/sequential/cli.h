@@ -8,6 +8,7 @@
 typedef enum {
     CLI_CMD_QUIT,
     CLI_CMD_HELP,
+    CLI_CMD_CLEAR,
     CLI_CMD_ERROR,
     CLI_CMD_UNKNOWN,
     CLI_CMD_STABLETYPELENGTH,
