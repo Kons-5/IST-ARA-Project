@@ -28,6 +28,11 @@ int main(int argc, char *argv[]) {
                 cli_print_usage();
                 break;
 
+            case CLI_CMD_CLEAR:
+                printf("\x1b[2J\x1b[H");
+                fflush(stdout);
+                break;
+
             case CLI_CMD_ERROR:
                 return 1;
 
@@ -37,10 +42,6 @@ int main(int argc, char *argv[]) {
 
             case CLI_CMD_SIMUCOMPLETE:
                 SimuComplete(args.path, args.t, args.d);
-                break;
-
-            case CLI_CMD_SIMUCOMPLETEALL:
-                SimuCompleteAll(args.path, args.d);
                 break;
 
             default:
