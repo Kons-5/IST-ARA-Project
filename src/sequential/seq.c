@@ -91,6 +91,13 @@ void StableTypeLength(const char *path, unsigned short t) {
     return;
 }
 
+void StableAll(const char *path) {
+    for (unsigned short t = 0; t < 65535u; t++) {
+        StableTypeLength(path, t);
+    }
+    return;
+}
+
 void OptimalTypeLength(const char *path, unsigned short t) {
     RoutingTable *Table[65536] = {0};
     RoutingTable *O_t[65536] = {0};
@@ -104,13 +111,6 @@ void OptimalTypeLength(const char *path, unsigned short t) {
 
     clear_table(Table);
     clear_table(O_t);
-    return;
-}
-
-void StableAll(const char *path) {
-    for (unsigned short t = 0; t < 65535u; t++) {
-        StableTypeLength(path, t);
-    }
     return;
 }
 

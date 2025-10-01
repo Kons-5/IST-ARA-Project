@@ -1,6 +1,6 @@
-#include "../../include/distributed/tab.h"
-#include <stdlib.h>
+#include "../../include/sequential/tab.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 static RoutingTable *add_adjancency(unsigned short u, unsigned short v, tl_type tl) {
     RoutingTable *entry = (RoutingTable *) malloc(sizeof(RoutingTable));
