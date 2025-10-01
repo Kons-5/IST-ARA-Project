@@ -2,11 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef struct Calendar {
+struct Calendar {
     event_type *a;
     size_t n;
     size_t cap;
-} cal_type;
+};
 
 static int ev_lt(const event_type *x, const event_type *y) {
     if (x->time < y->time)
