@@ -24,7 +24,7 @@ void StableTypeLength(const char *path, unsigned short t) {
     // Init destination with small epsilon
     E_t[t]->type_length.type = TL_CUSTOMER;
     E_t[t]->type_length.len = 0;
-    q_enqueue(customerQ, t);
+    q_push(customerQ, t);
 
     // Inverted BFS with our routing algebra
     bool discovered[65536] = {false};
@@ -34,11 +34,11 @@ void StableTypeLength(const char *path, unsigned short t) {
         // Dequeue the next node v from the highest-priority non-empty queue.
         // Priority encodes the best attribute: CUSTOMER < PEER < PROVIDER.
         if (!q_is_empty(customerQ)) {
-            q_dequeue(customerQ, &v);
+            q_pop(customerQ, &v);
         } else if (!q_is_empty(peerQ)) {
-            q_dequeue(peerQ, &v);
+            q_pop(peerQ, &v);
         } else {
-            q_dequeue(providerQ, &v);
+            q_pop(providerQ, &v);
         }
 
         // Check if node v has been dequeued before
@@ -51,14 +51,14 @@ void StableTypeLength(const char *path, unsigned short t) {
         for (RoutingTable *e = Table[v]; e != NULL; e = e->next) {
             unsigned short u = e->destination;
 
-
             RoutingTable *l = Table[u];
             while (l && l->destination != v && l->next_hop != v) {
                 l = l->next;  // find v in u's routing table, optimize to O(1)
             }
 
             // Relaxation of u from v
-            tl_type extension = tl_extend(l->type_length, E_t[v]->type_length);
+            // tl_type extension = tl_extend(l->type_length, E_t[v]->type_length);
+            tl_type extension = tl_extend(TL_SWAP(e->type_length), E_t[v]->type_length);
             if (tl_compare_stable(E_t[u]->type_length, extension) >= 0) {
                 E_t[u]->type_length = extension;  // iff the extension is better
                 E_t[u]->next_hop = v;
@@ -67,15 +67,15 @@ void StableTypeLength(const char *path, unsigned short t) {
                     // Enqueue neighbor u in the queue from the POV of u
                     switch (l->type_length.type) {
                         case TL_CUSTOMER:
-                            q_enqueue(customerQ, u);
+                            q_push(customerQ, u);
                             break;
 
                         case TL_PEER:
-                            q_enqueue(peerQ, u);
+                            q_push(peerQ, u);
                             break;
 
                         case TL_PROVIDER:
-                            q_enqueue(providerQ, u);
+                            q_push(providerQ, u);
                             break;
 
                         default:

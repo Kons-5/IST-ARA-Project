@@ -14,4 +14,7 @@ int tl_compare_stable(tl_type a, tl_type b);
 int tl_compare_reduction(tl_type a, tl_type b);
 tl_type tl_extend(tl_type link_type_u_to_v, tl_type adv);
 
+#define TL_SWAP_ATTR(a_) (((a_)) == TL_CUSTOMER ? TL_PROVIDER : ((a_)) == TL_PROVIDER ? TL_CUSTOMER : TL_PEER)
+#define TL_SWAP(tl_) ((tl_type){TL_SWAP_ATTR((tl_).type), (tl_).len})
+
 #endif

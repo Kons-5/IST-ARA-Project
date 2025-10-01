@@ -32,7 +32,7 @@ void q_destroy(Queue *q) {
     free(q);
 }
 
-bool q_enqueue(Queue *q, unsigned short value) {
+bool q_push(Queue *q, unsigned short value) {
     if (!q) {
         return false;
     }
@@ -56,7 +56,7 @@ bool q_enqueue(Queue *q, unsigned short value) {
     return true;
 }
 
-bool q_dequeue(Queue *q, unsigned short *out_value) {
+bool q_pop(Queue *q, unsigned short *out_value) {
     if (!q || !q->head) {
         return false;
     }
