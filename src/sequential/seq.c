@@ -104,11 +104,28 @@ void OptimalTypeLength(const char *path, unsigned short t) {
     read_table(path, t, Table, O_t);
     print_table(Table, "Routing Table");
 
-    /*
-    3 Q
-    t
-    */
+    // Init queues for the three AS types
+    Queue *customerQ = q_create();
+    Queue *providerQ = q_create();
+    Queue *peerQ = q_create();
 
+    // Init destination with small epsilon
+    O_t[t]->type_length.type = TL_CUSTOMER;
+    O_t[t]->type_length.len = 0;
+    q_push(customerQ, t);
+
+    // Inverted BFS with our routing algebra
+    //
+    // ... ... ... ... ... ...
+    // ... Implementar aqui...
+    // ... ... ... ... ... ...
+
+    print_table(O_t, "Optimal Routing");
+
+    // Clean-up
+    q_destroy(customerQ);
+    q_destroy(providerQ);
+    q_destroy(peerQ);
     clear_table(Table);
     clear_table(O_t);
     return;
