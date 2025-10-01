@@ -14,7 +14,7 @@ void StableTypeLength(const char *path, unsigned short t) {
     RoutingTable *Table[65536] = {0};
     RoutingTable *E_t[65536] = {0};
     read_table(path, t, Table, E_t);
-    print_table(Table, "Routing Table");
+    // print_table(Table, "Routing Table");
 
     // Init queues for the three AS types
     Queue *customerQ = q_create();
@@ -51,13 +51,7 @@ void StableTypeLength(const char *path, unsigned short t) {
         for (RoutingTable *e = Table[v]; e != NULL; e = e->next) {
             unsigned short u = e->destination;
 
-            RoutingTable *l = Table[u];
-            while (l && l->destination != v && l->next_hop != v) {
-                l = l->next;  // find v in u's routing table, optimize to O(1)
-            }
-
             // Relaxation of u from v
-            // tl_type extension = tl_extend(l->type_length, E_t[v]->type_length);
             tl_type extension = tl_extend(TL_SWAP(e->type_length), E_t[v]->type_length);
             if (tl_compare_stable(E_t[u]->type_length, extension) >= 0) {
                 E_t[u]->type_length = extension;  // iff the extension is better
@@ -65,7 +59,7 @@ void StableTypeLength(const char *path, unsigned short t) {
 
                 if (!discovered[u]) {
                     // Enqueue neighbor u in the queue from the POV of u
-                    switch (l->type_length.type) {
+                    switch (TL_SWAP_ATTR(e->type_length.type)) {
                         case TL_CUSTOMER:
                             q_push(customerQ, u);
                             break;

@@ -53,6 +53,11 @@ cmd_type cli_parse_line(char *s, cli_args *a) {
             return CLI_CMD_STABLETYPELENGTH;
         }
 
+        // StableAll("path/to/net")
+        if (sscanf(s, "StableAll( \"%511[^\"]\" ) %n", a->path, &n) == 1 && s[n] == '\0') {
+            return CLI_CMD_STABLEALL;
+        }
+
         // OptimalTypeLength("path/to/net", t)
         if (sscanf(s, "OptimalTypeLength( \"%511[^\"]\" , %hu ) %n", a->path, &a->t, &n) == 2 && s[n] == '\0') {
             if (a->t < 0 || a->t > 65535)
@@ -60,13 +65,8 @@ cmd_type cli_parse_line(char *s, cli_args *a) {
             return CLI_CMD_OPTIMALTYPELENGTH;
         }
 
-        // StableAll("path/to/net")
-        if (sscanf(s, "StableAll( \"%511[^\"]\" ) %n", a->path, &n) == 3 && s[n] == '\0') {
-            return CLI_CMD_STABLEALL;
-        }
-
         // OptimalAll("path/to/net")
-        if (sscanf(s, "OptimalAll( \"%511[^\"]\" ) %n", a->path, &n) == 3 && s[n] == '\0') {
+        if (sscanf(s, "OptimalAll( \"%511[^\"]\" ) %n", a->path, &n) == 1 && s[n] == '\0') {
             return CLI_CMD_OPTIMALALL;
         }
     }
@@ -87,8 +87,8 @@ void cli_print_usage(void) {
 
     fprintf(stdout, "Available commands list: \n");
     fprintf(stdout, "> StableTypeLength(\"path/to/net\", t) \n");
-    fprintf(stdout, "> OptimalTypeLength(\"path/to/net\", t) \n");
     fprintf(stdout, "> StableAll(\"path/to/net\") \n");
+    fprintf(stdout, "> OptimalTypeLength(\"path/to/net\", t) \n");
     fprintf(stdout, "> OptimalAll(\"path/to/net\") \n");
     fprintf(stdout, "> quit | exit | q \n");
     fprintf(stdout, "> help | ? \n\n");

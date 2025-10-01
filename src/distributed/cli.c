@@ -70,6 +70,14 @@ cmd_type cli_parse_line(char *s, cli_args *a) {
             }
             return CLI_CMD_SIMUCOMPLETE;
         }
+
+        // SimuCompleteAll("path/to/net", d)
+        if (sscanf(s, "SimuComplete( \"%511[^\"]\" , %lf ) %n", a->path, &a->d, &n) == 2 && s[n] == '\0') {
+            if (a->d < 0.0) {
+                return CLI_CMD_ERROR;
+            }
+            return CLI_CMD_SIMUCOMPLETE;
+        }
     }
 
     return CLI_CMD_UNKNOWN;
