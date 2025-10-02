@@ -2,8 +2,42 @@
 #include "../../include/sequential/queue.h"
 #include "../../include/sequential/tab.h"
 #include "../../include/sequential/tl.h"
+#include <time.h>
 #include <stdio.h>
-#include <stdlib.h>
+#include <string.h>
+
+static unsigned short TypeCount[4];
+static unsigned short TotalPaths = 0;
+static unsigned short LenHist[65536];
+
+typedef void (*StableAllToggle)(RoutingTable *E_t[]);
+
+static struct {
+    StableAllToggle fn;
+} toggle = {0};
+
+static void StatsReset(void){
+    memset(TypeCount, 0, sizeof TypeCount);
+    memset(LenHist,   0, sizeof LenHist);
+    TotalPaths = 0;
+}
+
+static void AccStats(RoutingTable *E_t[]) {
+    for (unsigned u = 0; u < 65536u; ++u) {
+        if (!E_t[u]) {
+            continue;
+        }
+        tl_type tl = E_t[u]->type_length;
+
+        // Count type
+        TypeCount[tl.type]++;
+        TotalPaths++;
+
+        // count length
+        unsigned l = tl.len;  // 0..65535
+        LenHist[l]++;
+    }
+}
 
 static bool any_nonempty(const Queue *a, const Queue *b, const Queue *c) {
     return !q_is_empty(a) || !q_is_empty(b) || !q_is_empty(c);
@@ -14,7 +48,12 @@ void StableTypeLength(const char *path, unsigned short t) {
     RoutingTable *Table[65536] = {0};
     RoutingTable *E_t[65536] = {0};
     read_table(path, t, Table, E_t);
-    print_table(Table, "Routing Table");
+    //print_table(Table, "Routing Table");
+    if (!Table[t]) {
+        clear_table(Table);
+        clear_table(E_t);
+        return;
+    }
 
     // Init queues for the three AS types
     Queue *customerQ = q_create();
@@ -80,7 +119,11 @@ void StableTypeLength(const char *path, unsigned short t) {
         }
     }
 
-    print_table(E_t, "Stable Routing");
+    if (toggle.fn) {
+        toggle.fn(E_t);
+    } else {
+        print_table(E_t, "Stable Routing");
+    }
 
     // Clean-up
     q_destroy(customerQ);
@@ -92,9 +135,24 @@ void StableTypeLength(const char *path, unsigned short t) {
 }
 
 void StableAll(const char *path) {
+    StatsReset();
+    toggle.fn = AccStats;
+
+    time_t t0 = time(NULL);
+
     for (unsigned short t = 0; t < 65535u; t++) {
+        printf("Destination %d\n", t);
         StableTypeLength(path, t);
     }
+    toggle.fn = NULL;
+
+    double secs = difftime(time(NULL), t0);
+    printf("Elapsed: %.2f minutes (%.0f s)\n", secs/60.0, secs);
+
+    printf("Types:\n");
+    printf("  Customer: %.3f%%\n", 100.0 * TypeCount[TL_CUSTOMER] / TotalPaths);
+    printf("  Peer    : %.3f%%\n", 100.0 * TypeCount[TL_PEER]     / TotalPaths);
+    printf("  Provider: %.3f%%\n", 100.0 * TypeCount[TL_PROVIDER] / TotalPaths);
     return;
 }
 
