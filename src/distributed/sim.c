@@ -5,6 +5,9 @@
 #include "../../include/distributed/tl.h"
 
 void SimuSimple(const char *path, unsigned short t, double d) {
+    Calendar *calendar = cal_new();
+
+    cal_free(calendar);
     return;
 }
 

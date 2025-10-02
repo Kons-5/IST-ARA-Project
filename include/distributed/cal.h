@@ -8,13 +8,13 @@ typedef struct Event {
     unsigned short to;
     unsigned short from;
     unsigned long long seq;
-} event_type;
+} Event;
 
-typedef struct Calendar cal_type;
+typedef struct Calendar Calendar;
 
-cal_type *cal_new(void);
-void cal_free(cal_type *c);
-int cal_push(cal_type *c, event_type e);
-int cal_pop(cal_type *c, event_type *out);
+Calendar *cal_new(void);
+void cal_free(Calendar *c);
+int cal_push(Calendar *c, Event e);
+int cal_pop(Calendar *c, Event *out);
 
 #endif

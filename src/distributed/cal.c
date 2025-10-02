@@ -6,60 +6,73 @@
 #endif
 
 struct Calendar {
-    event_type *a;
+    Event *a;
     size_t cap;
     size_t n;
 };
 
-static int lt_event(const event_type *a, const event_type *b) {
+static int lt_event(const Event *a, const Event *b) {
     return (a->time < b->time) || (a->time == b->time && a->seq < b->seq);
 }
 
-static void swap_event(event_type *x, event_type *y) {
-    event_type temp = *x;
+static void swap_event(Event *x, Event *y) {
+    Event temp = *x;
     *x = *y;
     *y = temp;
 }
 
-static void sift_up(event_type *a, size_t i) {
+// Restore heap property bottom -> top after inserting at index i.
+// Min-heap invariant: for every node j>0, a[parent(j)] <= a[j].
+static void sift_up(Event *a, size_t i) {
     if (i == 0) {
+        // i is the root; nothing to fix
         return;
     }
 
+    // Parent index in 0-based heap: floor((i-1)/2)
     size_t p = (i - 1) >> 1;
+
+    // If a[i] < a[p], the edge (p -> i) violates the min-heap property.
+    // Swap and continue bubbling up from the parent.
     if (lt_event(&a[i], &a[p])) {
         swap_event(&a[i], &a[p]);
         sift_up(a, p);
     }
 }
 
-static void sift_down(event_type *a, size_t n, size_t i) {
-    size_t left = (i << 1) + 1;
-    size_t right = left + 1;
+// Restore heap property top -> down after removing the root and
+// moving the last element to index i (usually i == 0).
+static void sift_down(Event *a, size_t n, size_t i) {
+    // Children in 0-based heap
+    size_t left = (i << 1) + 1;  // 2*i + 1
+    size_t right = left + 1;     // 2*i + 2
 
+    // If there is no left child, i is a leaf; heap is already valid below.
     if (left >= n) {
         return;
     }
 
+    // m = index of the smaller child (prefer the smaller one to preserve heap)
     size_t m = left;
     if (right < n && lt_event(&a[right], &a[left])) {
         m = right;
     }
 
+    // If the smaller child is smaller than a[i], swap and keep sinking.
     if (lt_event(&a[m], &a[i])) {
         swap_event(&a[i], &a[m]);
         sift_down(a, n, m);
     }
 }
 
-cal_type *cal_new(void) {
-    cal_type *c = (cal_type *) calloc(1, sizeof(cal_type));
+Calendar *cal_new(void) {
+    Calendar *c = (Calendar *) calloc(1, sizeof(Calendar));
     if (!c) {
         return NULL;
     }
 
     c->cap = (size_t) CAL_MAX_EVENTS;
-    c->a = (event_type *) malloc(c->cap * sizeof(event_type));
+    c->a = (Event *) malloc(c->cap * sizeof(Event));
     if (!c->a) {
         free(c);
         return NULL;
@@ -69,7 +82,7 @@ cal_type *cal_new(void) {
     return c;
 }
 
-void cal_free(cal_type *c) {
+void cal_free(Calendar *c) {
     if (!c) {
         return;
     }
@@ -77,7 +90,7 @@ void cal_free(cal_type *c) {
     free(c);
 }
 
-int cal_push(cal_type *c, event_type e) {
+int cal_push(Calendar *c, Event e) {
     if (!c) {
         return -1;
     }
@@ -91,7 +104,7 @@ int cal_push(cal_type *c, event_type e) {
     return 0;
 }
 
-int cal_pop(cal_type *c, event_type *out) {
+int cal_pop(Calendar *c, Event *out) {
     if (!c || !out || c->n == 0) {
         return -1;
     }
