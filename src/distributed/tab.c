@@ -1,4 +1,4 @@
-#include "../../include/sequential/tab.h"
+#include "../../include/distributed/tab.h"
 #include <stdio.h>
 #include <stdlib.h>
 
