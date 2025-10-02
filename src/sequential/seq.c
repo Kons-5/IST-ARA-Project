@@ -6,9 +6,9 @@
 #include <stdio.h>
 #include <string.h>
 
-static unsigned short TypeCount[4];
-static unsigned short TotalPaths = 0;
-static unsigned short LenHist[65536];
+static int TypeCount[4];
+static int TotalPaths = 0;
+static int LenHist[65536];
 
 typedef void (*StableAllToggle)(RoutingTable *E_t[]);
 
@@ -16,9 +16,9 @@ static struct {
     StableAllToggle fn;
 } toggle = {0};
 
-static void StatsReset(void){
+static void StatsReset(void) {
     memset(TypeCount, 0, sizeof TypeCount);
-    memset(LenHist,   0, sizeof LenHist);
+    memset(LenHist, 0, sizeof LenHist);
     TotalPaths = 0;
 }
 
@@ -31,10 +31,9 @@ static void AccStats(RoutingTable *E_t[]) {
 
         // Count type
         TypeCount[tl.type]++;
-        TotalPaths++;
 
         // count length
-        unsigned l = tl.len;  // 0..65535
+        unsigned l = tl.len; // 0..65535
         LenHist[l]++;
     }
 }
@@ -48,7 +47,7 @@ void StableTypeLength(const char *path, unsigned short t) {
     RoutingTable *Table[65536] = {0};
     RoutingTable *E_t[65536] = {0};
     read_table(path, t, Table, E_t);
-    //print_table(Table, "Routing Table");
+    // print_table(Table, "Routing Table");
     if (!Table[t]) {
         clear_table(Table);
         clear_table(E_t);
@@ -93,7 +92,7 @@ void StableTypeLength(const char *path, unsigned short t) {
             // Relaxation of u from v
             tl_type extension = tl_extend(TL_SWAP(e->type_length), E_t[v]->type_length);
             if (tl_compare_stable(E_t[u]->type_length, extension) >= 0) {
-                E_t[u]->type_length = extension;  // iff the extension is better
+                E_t[u]->type_length = extension; // iff the extension is better
                 E_t[u]->next_hop = v;
 
                 if (!discovered[u]) {
@@ -140,19 +139,31 @@ void StableAll(const char *path) {
 
     time_t t0 = time(NULL);
 
+    printf("Types:\n");
+    printf("  Customer: %d%%\n", TypeCount[TL_CUSTOMER]);
+    printf("  Peer    : %d%%\n", TypeCount[TL_PEER]);
+    printf("  Provider: %d%%\n", TypeCount[TL_PROVIDER]);
+
     for (unsigned short t = 0; t < 65535u; t++) {
-        printf("Destination %d\n", t);
+        // printf("Destination %d\n", t);
         StableTypeLength(path, t);
     }
     toggle.fn = NULL;
 
     double secs = difftime(time(NULL), t0);
-    printf("Elapsed: %.2f minutes (%.0f s)\n", secs/60.0, secs);
+    printf("Elapsed: %.2f minutes (%.0f s)\n", secs / 60.0, secs);
+
+    TotalPaths = TypeCount[1] + TypeCount[2] + TypeCount[3];
+    printf("Types:\n");
+    printf("  TotalPaths: %d\n", TotalPaths);
+    printf("  Customer: %d\n", TypeCount[TL_CUSTOMER]);
+    printf("  Peer    : %d\n", TypeCount[TL_PEER]);
+    printf("  Provider: %d\n", TypeCount[TL_PROVIDER]);
 
     printf("Types:\n");
     printf("  Customer: %.3f%%\n", 100.0 * TypeCount[TL_CUSTOMER] / TotalPaths);
-    printf("  Peer    : %.3f%%\n", 100.0 * TypeCount[TL_PEER]     / TotalPaths);
-    printf("  Provider: %.3f%%\n", 100.0 * TypeCount[TL_PROVIDER] / TotalPaths);
+    printf("  Peer    : %.3f%%\n", 100.0 * TypeCount[TL_PEER] / TotalPaths);
+    printf("  Provider: %.3f%%\n\n", 100.0 * TypeCount[TL_PROVIDER] / TotalPaths);
     return;
 }
 
@@ -204,10 +215,10 @@ void OptimalTypeLength(const char *path, unsigned short t) {
                 if (inc == 2) {
                     // incomparable with the first chosen path
                     if (O_t[u]->next == NULL) {
-                        O_t[u]->next = add_adjancency(v, t, extension);  // we have room for a second incomparable path
+                        O_t[u]->next = add_adjancency(v, t, extension); // we have room for a second incomparable path
                     } else if (tl_compare_reduction(O_t[u]->next->type_length, extension) >= 0) {
-                        O_t[u]->next->type_length = extension;  // At most, a node keeps two paths,
-                        O_t[u]->next->next_hop = v;             // one with better type and another with better length
+                        O_t[u]->next->type_length = extension; // At most, a node keeps two paths,
+                        O_t[u]->next->next_hop = v;            // one with better type and another with better length
                     } else {
                         continue;
                     }

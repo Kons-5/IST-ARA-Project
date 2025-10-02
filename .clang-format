@@ -1,7 +1,7 @@
 BasedOnStyle: LLVM
 Language: Cpp
 
-ColumnLimit: 120
+ColumnLimit: 140
 IndentWidth: 4
 TabWidth: 4
 UseTab: Never
@@ -32,7 +32,7 @@ PointerAlignment: Right
 
 ReflowComments: true
 AlignTrailingComments: true
-SpacesBeforeTrailingComments: 2
+SpacesBeforeTrailingComments: 1
 
 SortIncludes: false
 IncludeBlocks: Preserve

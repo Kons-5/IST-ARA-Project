@@ -16,5 +16,6 @@ Calendar *cal_new(void);
 void cal_free(Calendar *c);
 int cal_push(Calendar *c, Event e);
 int cal_pop(Calendar *c, Event *out);
+int not_empty(Calendar *c);
 
 #endif

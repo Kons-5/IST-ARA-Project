@@ -6,9 +6,9 @@
 #endif
 
 struct Calendar {
-    Event *a;
-    size_t cap;
-    size_t n;
+    Event *a;   // list of time indexed events
+    size_t cap; // maximum number of elements
+    size_t n;   // current number of elements
 };
 
 static int lt_event(const Event *a, const Event *b) {
@@ -44,8 +44,8 @@ static void sift_up(Event *a, size_t i) {
 // moving the last element to index i (usually i == 0).
 static void sift_down(Event *a, size_t n, size_t i) {
     // Children in 0-based heap
-    size_t left = (i << 1) + 1;  // 2*i + 1
-    size_t right = left + 1;     // 2*i + 2
+    size_t left = (i << 1) + 1; // 2*i + 1
+    size_t right = left + 1;    // 2*i + 2
 
     // If there is no left child, i is a leaf; heap is already valid below.
     if (left >= n) {
@@ -95,7 +95,7 @@ int cal_push(Calendar *c, Event e) {
         return -1;
     }
     if (c->n == c->cap) {
-        return -1;  // heap is full
+        return -1; // heap is full
     }
 
     c->a[c->n] = e;
@@ -117,4 +117,11 @@ int cal_pop(Calendar *c, Event *out) {
         sift_down(c->a, c->n, 0);
     }
     return 0;
+}
+
+int not_empty(Calendar *c) {
+    if (c->n == 0) {
+        return 0;
+    }
+    return 1;
 }
