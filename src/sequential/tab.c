@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static RoutingTable *add_adjancency(unsigned short u, unsigned short v, tl_type tl) {
+RoutingTable *add_adjancency(unsigned short u, unsigned short v, tl_type tl) {
     RoutingTable *entry = (RoutingTable *) malloc(sizeof(RoutingTable));
     if (entry == NULL) {
         fprintf(stderr, "Error: out of memory for edge %hu->%hu\n", u, v);

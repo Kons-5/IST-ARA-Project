@@ -14,7 +14,7 @@ void StableTypeLength(const char *path, unsigned short t) {
     RoutingTable *Table[65536] = {0};
     RoutingTable *E_t[65536] = {0};
     read_table(path, t, Table, E_t);
-    // print_table(Table, "Routing Table");
+    print_table(Table, "Routing Table");
 
     // Init queues for the three AS types
     Queue *customerQ = q_create();
@@ -102,7 +102,7 @@ void OptimalTypeLength(const char *path, unsigned short t) {
     RoutingTable *Table[65536] = {0};
     RoutingTable *O_t[65536] = {0};
     read_table(path, t, Table, O_t);
-    print_table(Table, "Routing Table");
+    // print_table(Table, "Routing Table");
 
     // Init queues for the three AS types
     Queue *customerQ = q_create();
@@ -115,10 +115,71 @@ void OptimalTypeLength(const char *path, unsigned short t) {
     q_push(customerQ, t);
 
     // Inverted BFS with our routing algebra
-    //
-    // ... ... ... ... ... ...
-    // ... Implementar aqui...
-    // ... ... ... ... ... ...
+    bool discovered[65536] = {false};
+    while (any_nonempty(customerQ, peerQ, providerQ)) {
+        unsigned short v;
+
+        // Dequeue the next node v from the highest-priority non-empty queue.
+        // Priority encodes the best attribute: CUSTOMER < PEER < PROVIDER.
+        if (!q_is_empty(customerQ)) {
+            q_pop(customerQ, &v);
+        } else if (!q_is_empty(peerQ)) {
+            q_pop(peerQ, &v);
+        } else {
+            q_pop(providerQ, &v);
+        }
+
+        // Check if node v has been dequeued before
+        if (discovered[v]) {
+            continue;
+        } else {
+            discovered[v] = true;
+        }
+
+        for (RoutingTable *e = Table[v]; e != NULL; e = e->next) {
+            unsigned short u = e->destination;
+
+            // Relaxation of u from v
+            tl_type extension = tl_extend(TL_SWAP(e->type_length), O_t[v]->type_length);
+            int inc = tl_compare_reduction(O_t[u]->type_length, extension);
+            if (inc >= 0) {
+                if (inc == 2) {
+                    // incomparable with the first chosen path
+                    if (O_t[u]->next == NULL) {
+                        O_t[u]->next = add_adjancency(v, t, extension);  // we have room for a second incomparable path
+                    } else if (tl_compare_reduction(O_t[u]->next->type_length, extension) >= 0) {
+                        O_t[u]->next->type_length = extension;  // At most, a node keeps two paths,
+                        O_t[u]->next->next_hop = v;             // one with better type and another with better length
+                    } else {
+                        continue;
+                    }
+                } else {
+                    O_t[u]->type_length = extension;
+                    O_t[u]->next_hop = v;
+                }
+
+                // Enqueue neighbor u in the queue from the POV of u
+                if (!discovered[u] || inc == 2) {
+                    switch (TL_SWAP_ATTR(e->type_length.type)) {
+                        case TL_CUSTOMER:
+                            q_push(customerQ, u);
+                            break;
+
+                        case TL_PEER:
+                            q_push(peerQ, u);
+                            break;
+
+                        case TL_PROVIDER:
+                            q_push(providerQ, u);
+                            break;
+
+                        default:
+                            continue;
+                    }
+                }
+            }
+        }
+    }
 
     print_table(O_t, "Optimal Routing");
 

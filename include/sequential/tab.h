@@ -10,6 +10,8 @@ typedef struct RoutingTable {
     struct RoutingTable *next;   // next edge
 } RoutingTable;
 
+RoutingTable *add_adjancency(unsigned short u, unsigned short v, tl_type tl);
+
 void read_table(const char *path, unsigned short t, RoutingTable **tab, RoutingTable **Et);
 void print_table(RoutingTable **table, char *name);
 void clear_table(RoutingTable **table);
