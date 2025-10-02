@@ -10,7 +10,7 @@ static int TypeCount[4];
 static int TotalPaths = 0;
 static int LenHist[65536];
 
-typedef void (*StableAllToggle)(RoutingTable *E_t[]);
+typedef void (*StableAllToggle)(RoutingTable *E_t[], unsigned short t);
 
 static struct {
     StableAllToggle fn;
@@ -22,9 +22,9 @@ static void StatsReset(void) {
     TotalPaths = 0;
 }
 
-static void AccStats(RoutingTable *E_t[]) {
+static void AccStats(RoutingTable *E_t[], unsigned short t) {
     for (unsigned u = 0; u < 65536u; ++u) {
-        if (!E_t[u]) {
+        if (!E_t[u] || u == t) {
             continue;
         }
         tl_type tl = E_t[u]->type_length;
@@ -119,7 +119,7 @@ void StableTypeLength(const char *path, unsigned short t) {
     }
 
     if (toggle.fn) {
-        toggle.fn(E_t);
+        toggle.fn(E_t, t);
     } else {
         print_table(E_t, "Stable Routing");
     }
@@ -164,6 +164,14 @@ void StableAll(const char *path) {
     printf("  Customer: %.3f%%\n", 100.0 * TypeCount[TL_CUSTOMER] / TotalPaths);
     printf("  Peer    : %.3f%%\n", 100.0 * TypeCount[TL_PEER] / TotalPaths);
     printf("  Provider: %.3f%%\n\n", 100.0 * TypeCount[TL_PROVIDER] / TotalPaths);
+
+    int TotalLen = LenHist[1] + LenHist[2] + LenHist[3] + LenHist[4];
+    printf("Lengths:\n");
+    printf("  Length 1: %.3f%%\n", 100.0 * LenHist[1] / TotalLen);
+    printf("  Length 2: %.3f%%\n", 100.0 * LenHist[2] / TotalLen);
+    printf("  Length 3: %.3f%%\n", 100.0 * LenHist[3] / TotalLen);
+    printf("  Length 4: %.3f%%\n\n", 100.0 * LenHist[4] / TotalLen);
+
     return;
 }
 
