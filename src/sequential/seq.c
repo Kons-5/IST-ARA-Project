@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
-static int TypeCount[4];
+static int TypeCount[5];
 static int TotalPaths = 0;
 static int LenHist[65536];
 
@@ -139,11 +139,7 @@ void StableAll(const char *path) {
 
     time_t t0 = time(NULL);
 
-    printf("Types:\n");
-    printf("  Customer: %d%%\n", TypeCount[TL_CUSTOMER]);
-    printf("  Peer    : %d%%\n", TypeCount[TL_PEER]);
-    printf("  Provider: %d%%\n", TypeCount[TL_PROVIDER]);
-
+    // Iterate through all possible destinations
     for (unsigned short t = 0; t < 65535u; t++) {
         // printf("Destination %d\n", t);
         StableTypeLength(path, t);
@@ -151,26 +147,31 @@ void StableAll(const char *path) {
     toggle.fn = NULL;
 
     double secs = difftime(time(NULL), t0);
-    printf("Elapsed: %.2f minutes (%.0f s)\n", secs / 60.0, secs);
+    printf("\nElapsed: %.2f minutes (%.0f s)\n\n", secs / 60.0, secs);
 
-    TotalPaths = TypeCount[1] + TypeCount[2] + TypeCount[3];
-    printf("Types:\n");
-    printf("  TotalPaths: %d\n", TotalPaths);
-    printf("  Customer: %d\n", TypeCount[TL_CUSTOMER]);
-    printf("  Peer    : %d\n", TypeCount[TL_PEER]);
-    printf("  Provider: %d\n", TypeCount[TL_PROVIDER]);
+    // Type statistics
+    printf("Types (percentage):\n");
+    long long total_types = TypeCount[1] + TypeCount[2] + TypeCount[3] + TypeCount[4];
+    printf("  Customer: %.3f%%\n", 100.0 * TypeCount[TL_CUSTOMER] / (double) total_types);
+    printf("  Peer    : %.3f%%\n", 100.0 * TypeCount[TL_PEER] / (double) total_types);
+    printf("  Provider: %.3f%%\n\n", 100.0 * TypeCount[TL_PROVIDER] / (double) total_types);
+    printf("  Invalid : %.3f%%\n\n", 100.0 * TypeCount[TL_INVALID] / (double) total_types);
 
-    printf("Types:\n");
-    printf("  Customer: %.3f%%\n", 100.0 * TypeCount[TL_CUSTOMER] / TotalPaths);
-    printf("  Peer    : %.3f%%\n", 100.0 * TypeCount[TL_PEER] / TotalPaths);
-    printf("  Provider: %.3f%%\n\n", 100.0 * TypeCount[TL_PROVIDER] / TotalPaths);
+    // Length statistics
+    size_t n = sizeof(LenHist) / sizeof(LenHist[0]);
 
-    int TotalLen = LenHist[1] + LenHist[2] + LenHist[3] + LenHist[4];
-    printf("Lengths:\n");
-    printf("  Length 1: %.3f%%\n", 100.0 * LenHist[1] / TotalLen);
-    printf("  Length 2: %.3f%%\n", 100.0 * LenHist[2] / TotalLen);
-    printf("  Length 3: %.3f%%\n", 100.0 * LenHist[3] / TotalLen);
-    printf("  Length 4: %.3f%%\n\n", 100.0 * LenHist[4] / TotalLen);
+    long long total_len = 0;
+    for (size_t L = 1; L < n; ++L)
+        total_len += LenHist[L];
+
+    printf("Lengths (percentage):\n");
+    for (size_t L = 1; L < n; ++L) {
+        if (LenHist[L] == 0)
+            continue; // skip empty bins
+        double pct = (total_len > 0) ? 100.0 * (double) LenHist[L] / (double) total_len : 0.0;
+        printf("  Length %zu: %.3f%%\n", L, pct);
+    }
+    printf("\n");
 
     return;
 }
