@@ -76,7 +76,7 @@ void clear_table(RoutingTable **tab) {
         RoutingTable *list = tab[i];
         while (list != NULL) {
             RoutingTable *next = list->next;
-            free(list);  // traverses to end
+            free(list); // traverses to end
             list = next;
         }
         tab[i] = NULL;
@@ -93,11 +93,7 @@ void print_table(RoutingTable **tab, char *name) {
 
         printf("AS %05u:", i);
         for (RoutingTable *p = list; p != NULL; p = p->next) {
-            printf("\n(dest=%05u, {type=%hu, len=%hu}, hop=%05u)",
-                   p->destination,
-                   p->type_length.type,
-                   p->type_length.len,
-                   p->next_hop);
+            printf("\n(dest=%05u, {type=%hu, len=%hu}, hop=%05u)", p->destination, p->type_length.type, p->type_length.len, p->next_hop);
         }
         printf("\n\n");
     }

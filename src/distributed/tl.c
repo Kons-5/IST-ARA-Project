@@ -14,11 +14,11 @@ bool tl_is_invalid(tl_type x) {
 
 int tl_compare(tl_type a, tl_type b) {
     if (tl_is_invalid(a) && tl_is_invalid(b)) {
-        return 0;  // both invalid
+        return -1; // both invalid
     } else if (tl_is_invalid(a)) {
-        return 1;  // b wins
+        return 1; // b wins
     } else if (tl_is_invalid(b)) {
-        return -1;  // a wins
+        return -1; // a wins
     }
 
     if (a.type != b.type) {
@@ -29,7 +29,7 @@ int tl_compare(tl_type a, tl_type b) {
         return (a.len < b.len) ? -1 : 1;
     }
 
-    return 0;  // a == b
+    return 0; // a == b
 }
 
 tl_type tl_extend(tl_type lt, tl_type adv) {
