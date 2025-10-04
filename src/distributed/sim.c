@@ -21,7 +21,8 @@ void SimuSimple(const char *path, unsigned short t, double d) {
     Calendar *cal = cal_new();
     RoutingTable *adj[65536] = {0};
     RoutingTable *stl[65536] = {0};
-    read_table(path, t, adj, stl);
+    load_adj(path, adj);
+    load_state(stl, t);
 
     // Initialize destination with small epsilon
     stl[t]->type_length.type = TL_CUSTOMER;
