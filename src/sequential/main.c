@@ -40,12 +40,12 @@ int main(int argc, char *argv[]) {
                 StableTypeLength(args.path, args.t);
                 break;
 
-            case CLI_CMD_OPTIMALTYPELENGTH:
-                OptimalTypeLength(args.path, args.t);
-                break;
-
             case CLI_CMD_STABLEALL:
                 StableAll(args.path);
+                break;
+
+            case CLI_CMD_OPTIMALTYPELENGTH:
+                OptimalTypeLength(args.path, args.t);
                 break;
 
             case CLI_CMD_OPTIMALALL:

@@ -20,7 +20,23 @@ RoutingTable *add_adjancency(unsigned short u, unsigned short v, tl_type tl) {
     return entry;
 }
 
-void read_table(const char *path, unsigned short t, RoutingTable **tab, RoutingTable **Et) {
+void load_state(RoutingTable **Et, unsigned short t) {
+    for (unsigned u = 0; u <= 65535u; u++) {
+        tl_type tmp = (tl_type){
+            .type = TL_INVALID,
+            .len = 0u,
+        };
+
+        RoutingTable *entry = add_adjancency((unsigned short) u, t, tmp);
+        if (entry == NULL) {
+            exit(1);
+        }
+
+        Et[u] = entry;
+    }
+}
+
+void load_adj(const char *path, RoutingTable **tab) {
     FILE *fp = fopen(path, "r");
     if (fp == NULL) {
         exit(1);
@@ -38,22 +54,11 @@ void read_table(const char *path, unsigned short t, RoutingTable **tab, RoutingT
             exit(1);
         }
 
-        // if the routing table is empty, also initialize Et
         if (tab[u] == NULL) {
-            tl_type tmp = (tl_type){
-                .type = TL_INVALID,
-                .len = 0u,
-            };
-
-            RoutingTable *stab_entry = add_adjancency(u, t, tmp);
-            if (stab_entry == NULL) {
-                exit(1);
-            }
-
+            // If the routing table is empty
             tab[u] = tab_entry;
-            Et[u] = stab_entry;
         } else {
-            // insert new neighbor at the end
+            // Insert new neighbor at the end
             RoutingTable *tmp = tab[u];
             RoutingTable *prev = NULL;
             while (tmp != NULL) {
@@ -72,7 +77,7 @@ void clear_table(RoutingTable **tab) {
         return;
     }
 
-    for (size_t i = 0; i <= 65535u; ++i) {
+    for (unsigned i = 0; i <= 65535u; i++) {
         RoutingTable *list = tab[i];
         while (list != NULL) {
             RoutingTable *next = list->next;
@@ -85,13 +90,13 @@ void clear_table(RoutingTable **tab) {
 
 void print_table(RoutingTable **tab, char *name) {
     printf("\n---> Start of %s\n\n", name);
-    for (unsigned short i = 0; i < 65535u; ++i) {
+    for (unsigned i = 0; i <= 65535u; i++) {
         RoutingTable *list = tab[i];
         if (list == NULL) {
             continue;
         }
 
-        printf("AS %05u:", i);
+        printf("AS %05hu:", i);
         for (RoutingTable *p = list; p != NULL; p = p->next) {
             printf("\n(dest=%05u, {type=%hu, len=%hu}, hop=%05u)", p->destination, p->type_length.type, p->type_length.len, p->next_hop);
         }
