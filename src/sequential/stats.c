@@ -1,4 +1,5 @@
 #include "../../include/sequential/stats.h"
+#include "../../include/sequential/tl.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -19,7 +20,18 @@ void AccStats(RoutingTable *adj[], RoutingTable *E_t[], unsigned short t) {
         if (!adj[u] || !E_t[u] || u == t) {
             continue;
         }
+
         tl_type tl = E_t[u]->type_length;
+        if (E_t[u]->next != NULL) {
+            if (E_t[u]->type_length.type > E_t[u]->next->type_length.type){
+                tl = E_t[u]->next->type_length;
+            }
+        }
+
+        if (tl.len == 17) {
+            printf("%d\n", t);
+            printf("%d\n", u);
+        }
 
         // Increment type
         TypeCount[tl.type]++;
@@ -32,6 +44,13 @@ void AccStats(RoutingTable *adj[], RoutingTable *E_t[], unsigned short t) {
 }
 
 void PrintStats(void) {
+    printf("Numbers:\n");
+    printf("  Customer: %d\n", (int) TypeCount[1]);
+    printf("  Peer    : %d\n", (int) TypeCount[2]);
+    printf("  Provider: %d\n", (int) TypeCount[3]);
+    printf("  Invalid : %d\n", (int) TypeCount[4]);
+    printf("\n");
+
     // Type statistics
     printf("Types (percentage):\n");
     printf("  Customer: %.3f%%\n", 100.0 * (double) TypeCount[1] / (double) TotalTypes);
@@ -41,7 +60,7 @@ void PrintStats(void) {
     printf("\n");
 
     // Length statistics
-    printf("Lengths (percentage):\n");
+    printf("Lengths and numbers (percentage):\n");
     for (unsigned L = 1; L <= 65535u; L++) {
         if (LenHist[L] == 0) {
             continue; // skip empty bins
@@ -49,6 +68,7 @@ void PrintStats(void) {
 
         double percentage = 100.0 * (double) LenHist[L] / (double) TotalLengths;
         printf("  Length %hu: %.3f%%\n", L, percentage);
+        printf("  Length %hu: %zu\n", L, LenHist[L]);
     }
     printf("\n");
 }

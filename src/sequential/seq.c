@@ -3,6 +3,7 @@
 #include "../../include/sequential/stats.h"
 #include "../../include/sequential/tab.h"
 #include "../../include/sequential/tl.h"
+#include <stdlib.h>
 #include <time.h>
 #include <stdio.h>
 #include <string.h>
@@ -41,9 +42,6 @@ void StableTypeLength(const char *path, unsigned short t) {
 
     RoutingTable *E_t[65536] = {0};
     load_state(E_t, t);
-
-    // Begin counter if not called by StableAll()
-    time_t t0 = time(NULL);
 
     // Init queues for the three AS types
     Queue *customerQ = q_create();
@@ -114,11 +112,6 @@ void StableTypeLength(const char *path, unsigned short t) {
     } else {
         // Print stable routing and elapsed time
         print_table(g_adj, E_t, "Stable Routing");
-
-        double secs = difftime(time(NULL), t0);
-        printf("\nElapsed: %.2f minutes (%.0f s)\n\n", secs / 60.0, secs);
-
-        // Free cached adjacency lists
         free_cached_adj();
     }
 
@@ -206,26 +199,58 @@ void OptimalTypeLength(const char *path, unsigned short t) {
             unsigned short u = e->destination;
 
             // Relaxation of u from v
-            tl_type extension = tl_extend(TL_SWAP(e->type_length), O_t[v]->type_length);
-            int inc = tl_compare_reduction(O_t[u]->type_length, extension);
-            if (inc >= 0) {
-                if (inc == 2) {
-                    // Incomparable with the first chosen path
-                    if (O_t[u]->next == NULL) {
-                        O_t[u]->next = add_adjancency(v, t, extension); // We have room for a second incomparable path
-                    } else if (tl_compare_reduction(O_t[u]->next->type_length, extension) >= 0) {
-                        O_t[u]->next->type_length = extension; // At most, a node keeps two paths,
-                        O_t[u]->next->next_hop = v;            // one with better type and another with better length
-                    } else {
-                        continue;
-                    }
+            // if u is not a customer then it prefers the path with best type, else, with the best length
+            tl_type adv = e->type_length;
+
+            // If customer pick the entry with smaller length
+            // If peer or provider pick the entry with smaller type
+            tl_type base = O_t[v]->type_length;
+
+            if (O_t[v]->next) {
+                tl_type head = O_t[v]->type_length;
+                tl_type alt = O_t[v]->next->type_length;
+
+                if (adv.type == TL_CUSTOMER) {
+                    base = (alt.len < head.len) ? alt : head;
                 } else {
+                    if (alt.type < head.type)
+                        base = alt;
+                }
+            }
+
+            tl_type extension = tl_extend(TL_SWAP(e->type_length), base);
+            int inc1 = tl_compare_reduction(O_t[u]->type_length, extension);
+            int inc2 = 0;
+            if (O_t[u]->next) {
+                inc2 = tl_compare_reduction(O_t[u]->next->type_length, extension);
+            }
+
+            if (inc1 >= 0 || inc2 >= 0) {
+                if (inc1 == 1 && O_t[u]->next == NULL) {
                     O_t[u]->type_length = extension;
                     O_t[u]->next_hop = v;
+                } else if (inc1 == 2 && O_t[u]->next == NULL) {
+                    O_t[u]->next = add_adjancency(v, t, extension);
+                } else if (inc1 == 1 && inc2 == 1) {
+                    if (O_t[u]->type_length.len < O_t[u]->next->type_length.len) {
+                        O_t[u]->next->type_length = extension;
+                        O_t[u]->next->next_hop = v;
+                    } else {
+                        O_t[u]->type_length = extension;
+                        O_t[u]->next_hop = v;
+                    }
+                } else if (inc1 == 2 && inc2 >= 0) {
+                    O_t[u]->next->type_length = extension;
+                    O_t[u]->next->next_hop = v;
+                } else if (inc1 >= 0 && inc2 == 2) {
+                    O_t[u]->type_length = extension;
+                    O_t[u]->next_hop = v;
+                } else if (inc1 == 2 && inc2 == 2) {
+                    printf("Afinal pode\n");
                 }
 
                 // Enqueue neighbor u in the queue from the POV of u
-                if (!discovered[u] || inc == 2) {
+                if (!discovered[u]) {
                     switch (TL_SWAP_ATTR(e->type_length.type)) {
                         case TL_CUSTOMER:
                             q_push(customerQ, u);
@@ -247,7 +272,13 @@ void OptimalTypeLength(const char *path, unsigned short t) {
         }
     }
 
-    print_table(g_adj, O_t, "Optimal Routing");
+    if (toggle.fn) {
+        toggle.fn(g_adj, O_t, t);
+    } else {
+        // Print stable routing and elapsed time
+        print_table(g_adj, O_t, "Optimal Routing");
+        free_cached_adj();
+    }
 
     // Clean-up
     q_destroy(customerQ);
@@ -259,10 +290,25 @@ void OptimalTypeLength(const char *path, unsigned short t) {
 }
 
 void OptimalAll(const char *path) {
+    StatsReset();
+    toggle.fn = AccStats;
+
+    // Iterate through all possible destinations
+    time_t t0 = time(NULL);
+
     for (unsigned t = 0; t <= 65535u; t++) {
         OptimalTypeLength(path, (unsigned short) t);
     }
+    toggle.fn = NULL;
+
+    // Print elapsed time and stats
+    double secs = difftime(time(NULL), t0);
+    printf("\nElapsed: %.2f minutes (%.0f s)\n\n", secs / 60.0, secs);
+
+    PrintStats(); // results
 
     // Free cached adjacency lists
     free_cached_adj();
+
+    return;
 }
