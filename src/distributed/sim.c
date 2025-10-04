@@ -4,6 +4,22 @@
 #include "../../include/distributed/tab.h"
 #include "../../include/distributed/tl.h"
 #include <float.h>
+#include <time.h>
+#include <stdio.h>
+#include <string.h>
+
+static RoutingTable *g_adj[65536] = {0}; // file-scope cache
+static bool g_adj_loaded = false;
+
+static void free_cached_adj(void) {
+    if (!g_adj_loaded) {
+        return;
+    }
+
+    clear_table(g_adj);
+    memset(g_adj, 0, sizeof(g_adj));
+    g_adj_loaded = false;
+}
 
 static void channel(Event event, double time, double d) {
     return;
@@ -18,10 +34,18 @@ static void process_event(Calendar *cal, RoutingTable **adj, RoutingTable **stl,
 }
 
 void SimuSimple(const char *path, unsigned short t, double d) {
+    // Read and populate the information from the file
+    if (!g_adj_loaded) {
+        load_adj(path, g_adj);
+        g_adj_loaded = true;
+    }
+
+    if (!g_adj[t]) {
+        return;
+    }
+
     Calendar *cal = cal_new();
-    RoutingTable *adj[65536] = {0};
     RoutingTable *stl[65536] = {0};
-    load_adj(path, adj);
     load_state(stl, t);
 
     // Initialize destination with small epsilon
@@ -29,7 +53,7 @@ void SimuSimple(const char *path, unsigned short t, double d) {
     stl[t]->type_length.len = 0;
 
     // Broadcast initial (1,0) messages from destination
-    for (RoutingTable *e = adj[t]; e; e = e->next) {
+    for (RoutingTable *e = g_adj[t]; e; e = e->next) {
         Event event = (Event){
             .from = t,
             .to = e->destination,
@@ -48,16 +72,16 @@ void SimuSimple(const char *path, unsigned short t, double d) {
             break;
         }
 
-        process_event(cal, adj, stl, out);
+        process_event(cal, g_adj, stl, out);
     }
 
     // Debug
-    print_table(adj, stl, "Stable Routing");
+    print_table(g_adj, stl, "Stable Routing");
 
     // Clean-up
     cal_free(cal);
-    clear_table(adj);
     clear_table(stl);
+    free_cached_adj();
     return;
 }
 
