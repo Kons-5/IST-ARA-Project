@@ -1,6 +1,7 @@
 #include "../../include/distributed/tab.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <float.h>
 
 RoutingTable *add_adjancency(unsigned short u, unsigned short v, tl_type tl) {
     RoutingTable *entry = (RoutingTable *) malloc(sizeof(RoutingTable));
@@ -16,6 +17,7 @@ RoutingTable *add_adjancency(unsigned short u, unsigned short v, tl_type tl) {
         .len = tl.len,
     };
     entry->next = NULL;
+    entry->time = NULL;
 
     return entry;
 }
@@ -69,6 +71,30 @@ void load_adj(const char *path, RoutingTable **tab) {
         }
     }
 
+    for (unsigned uu = 0; uu <= 65535u; uu++) {
+        for (RoutingTable *e = tab[uu]; e; e = e->next) {
+            if (e->time) {
+                continue; // Already linked, skip
+            }
+
+            double *shared = (double *) malloc(sizeof(*shared));
+            if (!shared) {
+                exit(1);
+            }
+            *shared = -DBL_MAX;
+            e->time = shared;
+
+            // Find reverse edge vv->uu and point it to the same double
+            unsigned short vv = e->destination;
+            for (RoutingTable *r = tab[vv]; r; r = r->next) {
+                if (r->destination == uu) {
+                    r->time = shared;
+                    break;
+                }
+            }
+        }
+    }
+
     fclose(fp);
 }
 
@@ -81,8 +107,11 @@ void clear_table(RoutingTable **tab) {
         RoutingTable *list = tab[i];
         while (list != NULL) {
             RoutingTable *next = list->next;
-            free(list); // traverses to end
-            list = next;
+            if (i < list->destination && list->time != NULL) {
+                free(list->time);
+            }
+            free(list);
+            list = next; // traverses to end
         }
         tab[i] = NULL;
     }

@@ -3,13 +3,15 @@
 #include "../../include/distributed/rng.h"
 #include "../../include/distributed/tab.h"
 #include "../../include/distributed/tl.h"
-#include <float.h>
-#include <time.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <time.h>
+#include <float.h>
 
 static RoutingTable *g_adj[65536] = {0}; // file-scope cache
 static bool g_adj_loaded = false;
+static unsigned long g_seq = 0;
 
 static void free_cached_adj(void) {
     if (!g_adj_loaded) {
@@ -21,16 +23,64 @@ static void free_cached_adj(void) {
     g_adj_loaded = false;
 }
 
-static void channel(Event event, double time, double d) {
-    return;
+static void schedule(Calendar *cal, Event event, double d) {
+    unsigned short v = event.from;
+    unsigned short u = event.to;
+
+    RoutingTable *e_vu = NULL;
+    for (RoutingTable *e = g_adj[u]; e; e = e->next) {
+        if (e->destination == v) {
+            e_vu = e;
+            break;
+        }
+    }
+    if (!e_vu || !e_vu->time) {
+        return;
+    }
+
+    double prev_time = *e_vu->time;
+    double current_time = event.time;
+    double arrival_time = current_time + 1.0 + rng_uniform(0.0, d);
+    arrival_time = (arrival_time > prev_time + 0.01) ? arrival_time : prev_time + 0.01;
+
+    event.seq = g_seq++;
+    event.time = arrival_time;
+    *e_vu->time = arrival_time;
+    cal_push(cal, event);
 }
 
-static void schedule(Calendar *cal, Event event) {
-    return;
-}
+static void process_event(Calendar *cal, RoutingTable **stl, Event event, double d) {
+    unsigned short v = event.from;
+    unsigned short u = event.to;
 
-static void process_event(Calendar *cal, RoutingTable **adj, RoutingTable **stl, Event event) {
-    return;
+    RoutingTable *edge_vu = NULL;
+    for (RoutingTable *e = g_adj[u]; e; e = e->next) {
+        if (e->destination == v) {
+            edge_vu = e;
+            break;
+        }
+    }
+    if (!edge_vu) {
+        return;
+    }
+
+    tl_type proposed = tl_extend(edge_vu->type_length, event.adv);
+    if (tl_compare(stl[u]->type_length, proposed) >= 0) {
+        stl[u]->type_length = proposed;
+        stl[u]->next_hop = v;
+
+        // Advertise to all in-neighbors of u
+        for (RoutingTable *e = g_adj[u]; e; e = e->next) {
+            Event next = {
+                .time = event.time,
+                .adv = stl[u]->type_length,
+                .to = e->destination,
+                .from = u,
+            };
+
+            schedule(cal, next, d);
+        }
+    }
 }
 
 void SimuSimple(const char *path, unsigned short t, double d) {
@@ -55,14 +105,13 @@ void SimuSimple(const char *path, unsigned short t, double d) {
     // Broadcast initial (1,0) messages from destination
     for (RoutingTable *e = g_adj[t]; e; e = e->next) {
         Event event = (Event){
-            .from = t,
-            .to = e->destination,
-            .adv = stl[t]->type_length,
             .time = 0.0,
-            .seq = 0u,
+            .adv = stl[t]->type_length,
+            .to = e->destination,
+            .from = t,
         };
 
-        schedule(cal, event);
+        schedule(cal, event, d);
     }
 
     // Run the Discrete Event Simulator
@@ -72,7 +121,7 @@ void SimuSimple(const char *path, unsigned short t, double d) {
             break;
         }
 
-        process_event(cal, g_adj, stl, out);
+        process_event(cal, stl, out, d);
     }
 
     // Debug
@@ -82,7 +131,6 @@ void SimuSimple(const char *path, unsigned short t, double d) {
     cal_free(cal);
     clear_table(stl);
     free_cached_adj();
-    return;
 }
 
 void SimuComplete(const char *path, unsigned short t, double d) {

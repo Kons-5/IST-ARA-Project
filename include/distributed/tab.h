@@ -8,6 +8,7 @@ typedef struct RoutingTable {
     unsigned short next_hop;    // next-hop
     tl_type type_length;        // type-length
     struct RoutingTable *next;  // next edge
+    double *time;               // timestamp
 } RoutingTable;
 
 RoutingTable *add_adjancency(unsigned short u, unsigned short v, tl_type tl);

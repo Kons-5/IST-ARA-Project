@@ -66,7 +66,7 @@ static void sift_down(Event *a, size_t n, size_t i) {
 }
 
 Calendar *cal_new(void) {
-    Calendar *c = (Calendar *) calloc(1, sizeof(Calendar));
+    Calendar *c = (Calendar *) malloc(sizeof(Calendar));
     if (!c) {
         return NULL;
     }

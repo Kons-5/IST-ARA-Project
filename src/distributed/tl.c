@@ -40,7 +40,7 @@ tl_type tl_extend(tl_type lt, tl_type adv) {
     if (lt.type == TL_PROVIDER || adv.type == TL_CUSTOMER) {
         tl_type r = {
             .type = lt.type,
-            .len = adv.len + adv.len,
+            .len = lt.len + adv.len,
         };
         return r;
     }
