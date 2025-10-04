@@ -113,7 +113,7 @@ void StableTypeLength(const char *path, unsigned short t) {
         toggle.fn(g_adj, E_t, t);
     } else {
         // Print stable routing and elapsed time
-        print_table(E_t, "Stable Routing");
+        print_table(g_adj, E_t, "Stable Routing");
 
         double secs = difftime(time(NULL), t0);
         printf("\nElapsed: %.2f minutes (%.0f s)\n\n", secs / 60.0, secs);
@@ -247,7 +247,7 @@ void OptimalTypeLength(const char *path, unsigned short t) {
         }
     }
 
-    print_table(O_t, "Optimal Routing");
+    print_table(g_adj, O_t, "Optimal Routing");
 
     // Clean-up
     q_destroy(customerQ);
