@@ -52,7 +52,7 @@ void SimuSimple(const char *path, unsigned short t, double d) {
     }
 
     // Debug
-    print_table(stl, "Stable Routing");
+    print_table(adj, stl, "Stable Routing");
 
     // Clean-up
     cal_free(cal);

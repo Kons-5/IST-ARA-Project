@@ -88,11 +88,11 @@ void clear_table(RoutingTable **tab) {
     }
 }
 
-void print_table(RoutingTable **tab, char *name) {
+void print_table(RoutingTable **adj, RoutingTable **tab, char *name) {
     printf("\n---> Start of %s\n\n", name);
     for (unsigned i = 0; i <= 65535u; i++) {
         RoutingTable *list = tab[i];
-        if (list == NULL) {
+        if (!adj[i] || list == NULL) {
             continue;
         }
 
