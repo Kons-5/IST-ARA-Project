@@ -10,7 +10,7 @@
 #include <float.h>
 
 static RoutingTable *g_adj[65536] = {0}; // file-scope cache
-// static RoutingTable *tab_stl[65536] = {0};
+static RoutingTable *tab_stl[65536] = {0};
 static bool g_adj_loaded = false;
 static unsigned long g_seq = 0;
 
@@ -89,30 +89,81 @@ static void process_event_complete(Calendar *cal, RoutingTable **stl, Event even
     unsigned short u = event.to;
 
     RoutingTable *edge_vu = NULL;
-    for (RoutingTable *e = g_adj[u]; e; e = e->next) {
-        if (e->destination == v) {
-            edge_vu = e;
+    RoutingTable *slot = NULL;
+    RoutingTable *a = g_adj[u];
+    RoutingTable *b = tab_stl[u];
+    while (a && b) {
+        if (a->destination == v) {
+            edge_vu = a;
+            slot = b;
             break;
         }
+        a = a->next;
+        b = b->next;
     }
-    if (!edge_vu) {
+    if (!edge_vu || !slot) {
         return;
     }
 
-    tl_type proposed = tl_extend(edge_vu->type_length, event.adv);
-    if (tl_compare(stl[u]->type_length, proposed) >= 0) {
-        stl[u]->type_length = proposed;
-        stl[u]->next_hop = v;
+    // compute new candidate via v
+    tl_type new_cand = tl_extend(edge_vu->type_length, event.adv);
+    if (!tl_is_invalid(slot->type_length) && tl_compare(slot->type_length, new_cand) == 0) {
+        return;
+    }
 
-        // Advertise to all in-neighbors of u
+    // update cached candidate for neighbor v
+    tl_type old_cand = slot->type_length;
+    slot->type_length = new_cand;
+
+    tl_type old_best = stl[u]->type_length;
+    unsigned short old_hop = stl[u]->next_hop;
+    int updated_is_best = (old_hop == v);
+
+    // If updated neighbor is not the current best
+    if (!updated_is_best) {
+        if (tl_is_invalid(old_best) || tl_compare(new_cand, old_best) < 0) {
+            stl[u]->type_length = new_cand;
+            stl[u]->next_hop = v;
+
+            // Advertise to all in-neighbors of u
+            for (RoutingTable *e = g_adj[u]; e; e = e->next) {
+                Event next = (Event){.time = event.time, .adv = stl[u]->type_length, .to = e->destination, .from = u};
+                schedule(cal, next, d);
+            }
+        }
+        return; // Nothing else to do
+    }
+
+    // If it improved or stayed equal, keep it and (if changed) advertise
+    if (tl_compare(new_cand, old_cand) <= 0) {
+        if (tl_compare(new_cand, old_best) != 0) {
+            stl[u]->type_length = new_cand;
+            // next_hop stays v
+            for (RoutingTable *e = g_adj[u]; e; e = e->next) {
+                Event next = (Event){.time = event.time, .adv = stl[u]->type_length, .to = e->destination, .from = u};
+                schedule(cal, next, d);
+            }
+        }
+        return;
+    }
+
+    // If it got worse rescan tab_stl[u] once to find the new best
+    tl_type best = tl_invalid();
+    unsigned short best_hop = old_hop; // replaced if we find better
+    for (RoutingTable *p = tab_stl[u]; p; p = p->next) {
+        tl_type c = p->type_length;
+        if (!tl_is_invalid(c) && (tl_is_invalid(best) || tl_compare(c, best) < 0)) {
+            best = c;
+            best_hop = p->destination;
+        }
+    }
+
+    if (tl_compare(best, old_best) != 0) {
+        stl[u]->type_length = best;
+        stl[u]->next_hop = best_hop;
+
         for (RoutingTable *e = g_adj[u]; e; e = e->next) {
-            Event next = {
-                .time = event.time,
-                .adv = stl[u]->type_length,
-                .to = e->destination,
-                .from = u,
-            };
-
+            Event next = (Event){.time = event.time, .adv = stl[u]->type_length, .to = e->destination, .from = u};
             schedule(cal, next, d);
         }
     }
@@ -173,6 +224,7 @@ void SimuComplete(const char *path, unsigned short t, double d) {
     // Read and populate the information from the file
     if (!g_adj_loaded) {
         load_adj(path, g_adj);
+        load_stl_tab(tab_stl, g_adj);
         g_adj_loaded = true;
     }
 
@@ -216,6 +268,7 @@ void SimuComplete(const char *path, unsigned short t, double d) {
     // Clean-up
     cal_free(cal);
     clear_table(stl);
+    clear_table(tab_stl);
     free_cached_adj();
 }
 

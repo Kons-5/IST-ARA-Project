@@ -1,6 +1,6 @@
 #include "../../include/distributed/tl.h"
 
-static tl_type tl_invalid(void) {
+tl_type tl_invalid(void) {
     tl_type r = {
         .type = TL_INVALID,
         .len = 0u,

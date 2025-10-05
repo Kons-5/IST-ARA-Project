@@ -38,6 +38,38 @@ void load_state(RoutingTable **Et, unsigned short t) {
     }
 }
 
+void load_stl_tab(RoutingTable **tab_tabu, RoutingTable **adj) {
+    clear_table(tab_tabu); // ensure it's empty first
+
+    for (unsigned u = 0; u <= 65535u; ++u) {
+        RoutingTable *head = NULL, *tail = NULL;
+        for (RoutingTable *e = adj[u]; e; e = e->next) {
+            RoutingTable *entry = (RoutingTable *) malloc(sizeof(RoutingTable));
+            if (!entry) {
+                fprintf(stderr, "Error: out of memory in load_stl_tab for AS %u\n", u);
+                exit(1);
+            }
+
+            entry->destination = e->destination;
+            entry->next_hop = e->next_hop;
+            entry->type_length = (tl_type){
+                .type = TL_INVALID, // start with no cached candidate
+                .len = 0u,
+            };
+            entry->time = NULL; // tabu table doesn’t use time links
+            entry->next = NULL;
+
+            if (!head)
+                head = tail = entry;
+            else {
+                tail->next = entry;
+                tail = entry;
+            }
+        }
+        tab_tabu[u] = head;
+    }
+}
+
 void load_adj(const char *path, RoutingTable **tab) {
     FILE *fp = fopen(path, "r");
     if (fp == NULL) {

@@ -14,6 +14,7 @@ typedef struct RoutingTable {
 RoutingTable *add_adjacency(unsigned short u, unsigned short v, tl_type tl);
 
 void load_state(RoutingTable **Et, unsigned short t);
+void load_stl_tab(RoutingTable **tab_tabu, RoutingTable **adj);
 void load_adj(const char *path, RoutingTable **tab);
 void print_table(RoutingTable **adj, RoutingTable **tab, char *name);
 void clear_table(RoutingTable **table);

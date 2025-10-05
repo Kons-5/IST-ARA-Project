@@ -15,6 +15,7 @@ typedef struct {
     unsigned short len;
 } tl_type;
 
+tl_type tl_invalid(void);
 bool tl_is_invalid(tl_type x);
 int tl_compare(tl_type a, tl_type b);
 tl_type tl_extend(tl_type u_to_v, tl_type adv);
