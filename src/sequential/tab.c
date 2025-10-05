@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-RoutingTable *add_adjancency(unsigned short u, unsigned short v, tl_type tl) {
+RoutingTable *add_adjacency(unsigned short u, unsigned short v, tl_type tl) {
     RoutingTable *entry = (RoutingTable *) malloc(sizeof(RoutingTable));
     if (entry == NULL) {
         fprintf(stderr, "Error: out of memory for edge %hu->%hu\n", u, v);
@@ -27,7 +27,7 @@ void load_state(RoutingTable **Et, unsigned short t) {
             .len = 0u,
         };
 
-        RoutingTable *entry = add_adjancency((unsigned short) u, t, tmp);
+        RoutingTable *entry = add_adjacency((unsigned short) u, t, tmp);
         if (entry == NULL) {
             exit(1);
         }
@@ -49,7 +49,7 @@ void load_adj(const char *path, RoutingTable **tab) {
             .len = 1u,
         };
 
-        RoutingTable *tab_entry = add_adjancency(v, v, tmp);
+        RoutingTable *tab_entry = add_adjacency(v, v, tmp);
         if (tab_entry == NULL) {
             exit(1);
         }

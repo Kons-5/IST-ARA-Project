@@ -144,8 +144,6 @@ void StableAll(const char *path) {
 
     // Free cached adjacency lists
     free_cached_adj();
-
-    return;
 }
 
 void OptimalTypeLength(const char *path, unsigned short t) {
@@ -219,7 +217,7 @@ void OptimalTypeLength(const char *path, unsigned short t) {
                 // If extension has better type than head
                 if (better_by_type(extension, h)) {
                     if (!better_by_len(extension, h) && h.type != TL_INVALID) {
-                        O_t[u]->next = add_adjancency(O_t[u]->next_hop, t, O_t[u]->type_length);
+                        O_t[u]->next = add_adjacency(O_t[u]->next_hop, t, O_t[u]->type_length);
                     }
                     O_t[u]->type_length = extension;
                     O_t[u]->next_hop = v;
@@ -227,7 +225,7 @@ void OptimalTypeLength(const char *path, unsigned short t) {
                     // If extension has better length than head
                     if (better_by_len(extension, h)) {
                         if (!O_t[u]->next) {
-                            O_t[u]->next = add_adjancency(v, t, extension);
+                            O_t[u]->next = add_adjacency(v, t, extension);
                         } else if (better_by_len(extension, n)) {
                             O_t[u]->next->type_length = extension;
                             O_t[u]->next->next_hop = v;
@@ -274,7 +272,6 @@ void OptimalTypeLength(const char *path, unsigned short t) {
     q_destroy(peerQ);
     clear_table(O_t);
     free_cached_adj();
-    return;
 }
 
 void OptimalAll(const char *path) {
@@ -297,6 +294,4 @@ void OptimalAll(const char *path) {
 
     // Free cached adjacency lists
     free_cached_adj();
-
-    return;
 }
