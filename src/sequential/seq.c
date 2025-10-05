@@ -151,8 +151,6 @@ void StableAll(const char *path) {
 
 void OptimalTypeLength(const char *path, unsigned short t) {
     // Read and populate the information from the file
-    RoutingTable *O_t[65536] = {0};
-    load_state(O_t, t);
 
     if (!g_adj_loaded) {
         load_adj(path, g_adj);
@@ -160,9 +158,11 @@ void OptimalTypeLength(const char *path, unsigned short t) {
     }
 
     if (!g_adj[t]) {
-        clear_table(O_t);
         return;
     }
+
+    RoutingTable *O_t[65536] = {0};
+    load_state(O_t, t);
 
     // Init queues for the three AS types
     Queue *customerQ = q_create();
@@ -198,9 +198,10 @@ void OptimalTypeLength(const char *path, unsigned short t) {
 
         for (RoutingTable *e = g_adj[v]; e != NULL; e = e->next) {
             unsigned short u = e->destination;
+
             if (discovered[u]) {
                 continue;
-            }
+                }
 
             // Relaxation of u from v
             tl_type neigh = e->type_length;
@@ -209,10 +210,8 @@ void OptimalTypeLength(const char *path, unsigned short t) {
             // If peer or provider, pick the entry with smaller type
             // better type is always on the head, better length on the tail
             tl_type base = O_t[v]->type_length;
-            if (neigh.type == TL_CUSTOMER) {
-                if (O_t[v]->next) {
-                    base = O_t[v]->next->type_length;
-                }
+            if (O_t[v]->next && neigh.type == TL_CUSTOMER) {
+                base = O_t[v]->next->type_length;
             }
 
             tl_type extension = tl_extend(TL_SWAP(e->type_length), base);
