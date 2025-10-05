@@ -222,6 +222,7 @@ void OptimalTypeLength(const char *path, unsigned short t) {
                     if (!better_by_len(extension, h) && h.type != TL_INVALID) {
                         O_t[u]->next = add_adjacency(O_t[u]->next_hop, t, O_t[u]->type_length);
                     }
+
                     O_t[u]->type_length = extension;
                     O_t[u]->next_hop = v;
                 } else {
@@ -274,7 +275,6 @@ void OptimalTypeLength(const char *path, unsigned short t) {
     q_destroy(providerQ);
     q_destroy(peerQ);
     clear_table(O_t);
-    free_cached_adj();
     return;
 }
 
