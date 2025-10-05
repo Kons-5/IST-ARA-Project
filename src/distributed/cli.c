@@ -98,7 +98,7 @@ void cli_print_usage(void) {
     fprintf(stdout, "> SimuSimple(\"path/to/net\", t, d) \n");
     fprintf(stdout, "> SimuComplete(\"path/to/net\", t, d) \n");
     fprintf(stdout, "> SimuCompleteAll(\"path/to/net\") \n");
-    fprintf(stdout, "> quit | exit | q \n");
+    fprintf(stdout, "> quit  | exit | q \n");
     fprintf(stdout, "> clear | c \n");
-    fprintf(stdout, "> help | ? \n\n");
+    fprintf(stdout, "> help  | ? \n\n");
 }

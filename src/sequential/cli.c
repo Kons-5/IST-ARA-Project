@@ -90,7 +90,7 @@ void cli_print_usage(void) {
     fprintf(stdout, "> StableAll(\"path/to/net\") \n");
     fprintf(stdout, "> OptimalTypeLength(\"path/to/net\", t) \n");
     fprintf(stdout, "> OptimalAll(\"path/to/net\") \n");
-    fprintf(stdout, "> quit | exit | q \n");
+    fprintf(stdout, "> quit  | exit | q \n");
     fprintf(stdout, "> clear | c \n");
-    fprintf(stdout, "> help | ? \n\n");
+    fprintf(stdout, "> help  | ? \n\n");
 }
