@@ -76,6 +76,9 @@ void StableTypeLength(const char *path, unsigned short t) {
 
         for (RoutingTable *e = g_adj[v]; e != NULL; e = e->next) {
             unsigned short u = e->destination;
+            if (discovered[u]){
+                continue;
+            }
 
             // Relaxation of u from v
             tl_type extension = tl_extend(TL_SWAP(e->type_length), E_t[v]->type_length);
@@ -197,6 +200,9 @@ void OptimalTypeLength(const char *path, unsigned short t) {
 
         for (RoutingTable *e = g_adj[v]; e != NULL; e = e->next) {
             unsigned short u = e->destination;
+            if (discovered[u]){
+                continue;
+            }
 
             // Relaxation of u from v
             tl_type neigh = e->type_length;
