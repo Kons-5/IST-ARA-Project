@@ -5,6 +5,7 @@
 
 unsigned long TypeCount[5];
 unsigned long TotalTypes = 0;
+unsigned long AvgPaths = 0;
 unsigned long LenHist[65536];
 unsigned long TotalLengths = 0;
 
@@ -13,6 +14,7 @@ void StatsReset(void) {
     memset(LenHist, 0, sizeof LenHist);
     TotalTypes = 0;
     TotalLengths = 0;
+    AvgPaths = 0;
 }
 
 void AccStats(RoutingTable *adj[], RoutingTable *E_t[], unsigned short t) {
@@ -23,18 +25,12 @@ void AccStats(RoutingTable *adj[], RoutingTable *E_t[], unsigned short t) {
 
         tl_type tl = E_t[u]->type_length;
         if (E_t[u]->next != NULL) {
-            if (E_t[u]->type_length.type > E_t[u]->next->type_length.type){
-                tl = E_t[u]->next->type_length;
-            }
-        }
-
-        if (tl.len == 17) {
-            printf("%d\n", t);
-            printf("%d\n", u);
+            AvgPaths = AvgPaths + 1;
         }
 
         // Increment type
         TypeCount[tl.type]++;
+        AvgPaths = AvgPaths + 1;
         TotalTypes = TotalTypes + 1;
 
         // Increment length
@@ -60,15 +56,18 @@ void PrintStats(void) {
     printf("\n");
 
     // Length statistics
-    printf("Lengths and numbers (percentage):\n");
+    printf("Lengths:\n");
     for (unsigned L = 1; L <= 65535u; L++) {
         if (LenHist[L] == 0) {
             continue; // skip empty bins
         }
 
         double percentage = 100.0 * (double) LenHist[L] / (double) TotalLengths;
-        printf("  Length %hu: %.3f%%\n", L, percentage);
-        printf("  Length %hu: %zu\n", L, LenHist[L]);
+        printf("  Length %hu: %.3f%% (%zu)\n", L, percentage, LenHist[L]);
     }
+    printf("\n");
+
+    // Number of paths per node
+    printf("Average number of paths per node: %.3f\n", (double)AvgPaths / (double) TotalTypes);
     printf("\n");
 }

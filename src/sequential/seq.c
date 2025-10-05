@@ -199,54 +199,42 @@ void OptimalTypeLength(const char *path, unsigned short t) {
             unsigned short u = e->destination;
 
             // Relaxation of u from v
-            // if u is not a customer then it prefers the path with best type, else, with the best length
-            tl_type adv = e->type_length;
+            tl_type neigh = e->type_length;
 
             // If customer pick the entry with smaller length
             // If peer or provider pick the entry with smaller type
             tl_type base = O_t[v]->type_length;
-
-            if (O_t[v]->next) {
-                tl_type head = O_t[v]->type_length;
-                tl_type alt = O_t[v]->next->type_length;
-
-                if (adv.type == TL_CUSTOMER) {
-                    base = (alt.len < head.len) ? alt : head;
-                } else {
-                    if (alt.type < head.type)
-                        base = alt;
+            if (neigh.type == TL_CUSTOMER) {
+                if (O_t[v]->next) {
+                    base = O_t[v]->next->type_length;
                 }
             }
 
             tl_type extension = tl_extend(TL_SWAP(e->type_length), base);
-            int inc1 = tl_compare_reduction(O_t[u]->type_length, extension);
-            int inc2 = 0;
-            if (O_t[u]->next) {
-                inc2 = tl_compare_reduction(O_t[u]->next->type_length, extension);
-            }
 
-            if (inc1 >= 0 || inc2 >= 0) {
-                if (inc1 == 1 && O_t[u]->next == NULL) {
-                    O_t[u]->type_length = extension;
-                    O_t[u]->next_hop = v;
-                } else if (inc1 == 2 && O_t[u]->next == NULL) {
-                    O_t[u]->next = add_adjancency(v, t, extension);
-                } else if (inc1 == 1 && inc2 == 1) {
-                    if (O_t[u]->type_length.len < O_t[u]->next->type_length.len) {
-                        O_t[u]->next->type_length = extension;
-                        O_t[u]->next->next_hop = v;
-                    } else {
-                        O_t[u]->type_length = extension;
-                        O_t[u]->next_hop = v;
+            tl_type h = O_t[u]->type_length;
+            tl_type n = O_t[u]->next ? O_t[u]->next->type_length : h;
+
+            if (extension.type != TL_INVALID) {
+                // If extension has better type than head
+                if (better_by_type(extension, h)) {
+                    if (!better_by_len(extension, h) && h.type != TL_INVALID) {
+                        O_t[u]->next = add_adjancency(O_t[u]->next_hop, t, O_t[u]->type_length);
                     }
-                } else if (inc1 == 2 && inc2 >= 0) {
-                    O_t[u]->next->type_length = extension;
-                    O_t[u]->next->next_hop = v;
-                } else if (inc1 >= 0 && inc2 == 2) {
                     O_t[u]->type_length = extension;
                     O_t[u]->next_hop = v;
-                } else if (inc1 == 2 && inc2 == 2) {
-                    printf("Afinal pode\n");
+                } else {
+                    // If extension has better length than head
+                    if (better_by_len(extension, h)) {
+                        if (!O_t[u]->next) {
+                            O_t[u]->next = add_adjancency(v, t, extension);
+                        } else if (better_by_len(extension, n)) {
+                            O_t[u]->next->type_length = extension;
+                            O_t[u]->next->next_hop = v;
+                        } else {
+                            continue;
+                        }
+                    }
                 }
 
                 // Enqueue neighbor u in the queue from the POV of u

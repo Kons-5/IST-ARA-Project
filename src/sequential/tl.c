@@ -52,23 +52,13 @@ int tl_compare_stable(tl_type a, tl_type b) {
     return tl_compare(a, b);
 }
 
-int tl_compare_reduction(tl_type a, tl_type b) {
-    if (tl_is_invalid(a) && tl_is_invalid(b))
-        return -1;
-    if (tl_is_invalid(a))
-        return 1;  // b wins
-    if (tl_is_invalid(b))
-        return -1;  // a wins
-
-    // Incomparability: opposite ordering in type vs len.
-    // TODO: Check wether we keep both even when the AS has no customers.
-    if (a.type != b.type && a.len != b.len) {
-        bool a_better_type = (a.type < b.type);
-        bool a_better_len  = (a.len  < b.len);
-
-        if (a_better_type != a_better_len) {
-            return 2;  // incomparable: one wins on type, the other on len
-        }
-    }
-    return tl_compare(a, b);
+int better_by_type(tl_type a, tl_type b) {
+    if (a.type != b.type)
+        return a.type < b.type;
+    return a.len < b.len;
+}
+int better_by_len(tl_type a, tl_type b) {
+    if (a.len != b.len)
+        return a.len < b.len;
+    return a.type < b.type;
 }
