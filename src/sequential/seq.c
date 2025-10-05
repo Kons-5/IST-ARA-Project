@@ -3,7 +3,6 @@
 #include "../../include/sequential/stats.h"
 #include "../../include/sequential/tab.h"
 #include "../../include/sequential/tl.h"
-#include <stdlib.h>
 #include <time.h>
 #include <stdio.h>
 #include <string.h>
@@ -86,6 +85,7 @@ void StableTypeLength(const char *path, unsigned short t) {
 
                 if (!discovered[u]) {
                     // Enqueue neighbor u in the queue from the POV of u
+                    // (i.e.: if u sees v as a provider place it in the provider queue)
                     switch (TL_SWAP_ATTR(e->type_length.type)) {
                         case TL_CUSTOMER:
                             q_push(customerQ, u);
@@ -144,6 +144,8 @@ void StableAll(const char *path) {
 
     // Free cached adjacency lists
     free_cached_adj();
+
+    return;
 }
 
 void OptimalTypeLength(const char *path, unsigned short t) {
@@ -199,8 +201,9 @@ void OptimalTypeLength(const char *path, unsigned short t) {
             // Relaxation of u from v
             tl_type neigh = e->type_length;
 
-            // If customer pick the entry with smaller length
-            // If peer or provider pick the entry with smaller type
+            // If customer, pick the entry with smaller length
+            // If peer or provider, pick the entry with smaller type
+            // better type is always on the head, better length on the tail
             tl_type base = O_t[v]->type_length;
             if (neigh.type == TL_CUSTOMER) {
                 if (O_t[v]->next) {
@@ -236,6 +239,7 @@ void OptimalTypeLength(const char *path, unsigned short t) {
                 }
 
                 // Enqueue neighbor u in the queue from the POV of u
+                // (i.e.: if u sees v as a provider place it in the provider queue)
                 if (!discovered[u]) {
                     switch (TL_SWAP_ATTR(e->type_length.type)) {
                         case TL_CUSTOMER:
@@ -272,6 +276,7 @@ void OptimalTypeLength(const char *path, unsigned short t) {
     q_destroy(peerQ);
     clear_table(O_t);
     free_cached_adj();
+    return;
 }
 
 void OptimalAll(const char *path) {
@@ -294,4 +299,6 @@ void OptimalAll(const char *path) {
 
     // Free cached adjacency lists
     free_cached_adj();
+
+    return;
 }
