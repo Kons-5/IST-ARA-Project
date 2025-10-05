@@ -232,10 +232,9 @@ void OptimalTypeLength(const char *path, unsigned short t) {
                         } else if (better_by_len(extension, n)) {
                             O_t[u]->next->type_length = extension;
                             O_t[u]->next->next_hop = v;
-                        } else {
-                            continue;
                         }
                     }
+                    continue;
                 }
 
                 // Enqueue neighbor u in the queue from the POV of u
