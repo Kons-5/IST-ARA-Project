@@ -76,9 +76,9 @@ void StableTypeLength(const char *path, unsigned short t) {
 
         for (RoutingTable *e = g_adj[v]; e != NULL; e = e->next) {
             unsigned short u = e->destination;
+            tl_type extension = tl_extend(TL_SWAP(e->type_length), E_t[v]->type_length);
 
             // Relaxation of u from v
-            tl_type extension = tl_extend(TL_SWAP(e->type_length), E_t[v]->type_length);
             if (tl_compare_stable(E_t[u]->type_length, extension) >= 0) {
                 E_t[u]->type_length = extension; // iff the extension is better
                 E_t[u]->next_hop = v;
@@ -111,7 +111,7 @@ void StableTypeLength(const char *path, unsigned short t) {
         toggle.fn(g_adj, E_t, t);
     } else {
         // Print stable routing and elapsed time
-        print_table(g_adj, E_t, "Stable Routing");
+        // print_table(g_adj, E_t, "Stable Routing");
         free_cached_adj();
     }
 

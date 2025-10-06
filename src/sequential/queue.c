@@ -1,5 +1,6 @@
 #include "../../include/sequential/queue.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 typedef struct Node {
     unsigned short value;
@@ -9,7 +10,7 @@ typedef struct Node {
 struct Queue {
     Node *head;
     Node *tail;
-    unsigned short size;
+    unsigned long long size;
 };
 
 Queue *q_create(void) {
@@ -108,6 +109,22 @@ void q_clear(Queue *q) {
     q->size = 0;
 }
 
-unsigned short q_size(const Queue *q) {
+unsigned long long q_size(const Queue *q) {
     return q ? q->size : 0u;
+}
+
+void print(Queue *q) {
+    if (!q) {
+        return;
+    }
+
+    printf("queue size: %llu\n", q->size);
+    printf("[ ");
+    Node *n = q->head;
+    while (n) {
+        Node *next = n->next;
+        printf("%hu, ", n->value);
+        n = next;
+    }
+    printf("]\n\n");
 }
