@@ -76,9 +76,6 @@ void StableTypeLength(const char *path, unsigned short t) {
 
         for (RoutingTable *e = g_adj[v]; e != NULL; e = e->next) {
             unsigned short u = e->destination;
-            if (discovered[u]) {
-                continue;
-            }
 
             // Relaxation of u from v
             tl_type extension = tl_extend(TL_SWAP(e->type_length), E_t[v]->type_length);
@@ -88,21 +85,23 @@ void StableTypeLength(const char *path, unsigned short t) {
 
                 // Enqueue neighbor u in the queue from the POV of u
                 // (i.e.: if u sees v as a provider place it in the provider queue)
-                switch (TL_SWAP_ATTR(e->type_length.type)) {
-                    case TL_CUSTOMER:
-                        q_push(customerQ, u);
-                        break;
+                if (!discovered[u]) {
+                    switch (TL_SWAP_ATTR(e->type_length.type)) {
+                        case TL_CUSTOMER:
+                            q_push(customerQ, u);
+                            break;
 
-                    case TL_PEER:
-                        q_push(peerQ, u);
-                        break;
+                        case TL_PEER:
+                            q_push(peerQ, u);
+                            break;
 
-                    case TL_PROVIDER:
-                        q_push(providerQ, u);
-                        break;
+                        case TL_PROVIDER:
+                            q_push(providerQ, u);
+                            break;
 
-                    default:
-                        continue;
+                        default:
+                            continue;
+                    }
                 }
             }
         }
@@ -151,7 +150,6 @@ void StableAll(const char *path) {
 
 void OptimalTypeLength(const char *path, unsigned short t) {
     // Read and populate the information from the file
-
     if (!g_adj_loaded) {
         load_adj(path, g_adj);
         g_adj_loaded = true;
@@ -199,10 +197,6 @@ void OptimalTypeLength(const char *path, unsigned short t) {
         for (RoutingTable *e = g_adj[v]; e != NULL; e = e->next) {
             unsigned short u = e->destination;
 
-            if (discovered[u]) {
-                continue;
-                }
-
             // Relaxation of u from v
             tl_type neigh = e->type_length;
 
@@ -243,21 +237,23 @@ void OptimalTypeLength(const char *path, unsigned short t) {
 
                 // Enqueue neighbor u in the queue from the POV of u
                 // (i.e.: if u sees v as a provider place it in the provider queue)
-                switch (TL_SWAP_ATTR(e->type_length.type)) {
-                    case TL_CUSTOMER:
-                        q_push(customerQ, u);
-                        break;
+                if (!discovered[u]) {
+                    switch (TL_SWAP_ATTR(e->type_length.type)) {
+                        case TL_CUSTOMER:
+                            q_push(customerQ, u);
+                            break;
 
-                    case TL_PEER:
-                        q_push(peerQ, u);
-                        break;
+                        case TL_PEER:
+                            q_push(peerQ, u);
+                            break;
 
-                    case TL_PROVIDER:
-                        q_push(providerQ, u);
-                        break;
+                        case TL_PROVIDER:
+                            q_push(providerQ, u);
+                            break;
 
-                    default:
-                        continue;
+                        default:
+                            continue;
+                    }
                 }
             }
         }
