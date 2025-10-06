@@ -2,6 +2,7 @@
 #include "../../include/sequential/tl.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 unsigned long TypeCount[5];
 unsigned long TotalTypes = 0;
@@ -19,9 +20,8 @@ void StatsReset(void) {
 
 void AccStats(RoutingTable *adj[], RoutingTable *E_t[], unsigned short t) {
     for (unsigned u = 0; u <= 65535u; u++) {
-        if (!adj[u] || !E_t[u] || u == t) {
+        if (!adj[u] || !E_t[u] || u == t)
             continue;
-        }
 
         tl_type tl = E_t[u]->type_length;
         if (E_t[u]->next != NULL) {
@@ -39,35 +39,54 @@ void AccStats(RoutingTable *adj[], RoutingTable *E_t[], unsigned short t) {
     }
 }
 
-void PrintStats(void) {
-    printf("Numbers:\n");
-    printf("  Customer: %d\n", (int) TypeCount[1]);
-    printf("  Peer    : %d\n", (int) TypeCount[2]);
-    printf("  Provider: %d\n", (int) TypeCount[3]);
-    printf("  Invalid : %d\n", (int) TypeCount[4]);
+static double pmf_calc(unsigned long num, unsigned long den) {
+    return (den == 0) ? 0.0 : (100.0 * (double) num / (double) den);
+}
+
+void PrintStatsColumns(int col_width) {
+    if (col_width <= 0) {
+        col_width = 10;
+    }
+    if (col_width > 10) {
+        col_width = 10;
+    }
+
+    int W = col_width;
+
+    // Types
+    printf("Types:\n");
+    printf("  %*s %*s %*s\n", W, "Type", W, "PMF", W, "Count");
+    printf("  %*s %*.3f%% %*lu\n", W, "Customer", W, pmf_calc(TypeCount[1], TotalTypes), W, TypeCount[1]);
+    printf("  %*s %*.3f%% %*lu\n", W, "Peer", W, pmf_calc(TypeCount[2], TotalTypes), W, TypeCount[2]);
+    printf("  %*s %*.3f%% %*lu\n", W, "Provider", W, pmf_calc(TypeCount[3], TotalTypes), W, TypeCount[3]);
+    printf("  %*s %*.3f%% %*lu\n", W, "Invalid", W, pmf_calc(TypeCount[4], TotalTypes), W, TypeCount[4]);
     printf("\n");
 
-    // Type statistics
-    printf("Types (percentage):\n");
-    printf("  Customer: %.3f%%\n", 100.0 * (double) TypeCount[1] / (double) TotalTypes);
-    printf("  Peer    : %.3f%%\n", 100.0 * (double) TypeCount[2] / (double) TotalTypes);
-    printf("  Provider: %.3f%%\n", 100.0 * (double) TypeCount[3] / (double) TotalTypes);
-    printf("  Invalid : %.3f%%\n", 100.0 * (double) TypeCount[4] / (double) TotalTypes);
-    printf("\n");
-
-    // Length statistics
+    // Lengths
     printf("Lengths:\n");
+    printf("  %*s %*s %*s %*s\n", W, "Length", W, "PMF", W, "CCDF", W, "Count");
+    unsigned long remaining = TotalLengths; /* mass for X >= current L */
     for (unsigned L = 1; L <= 65535u; L++) {
         if (LenHist[L] == 0) {
-            continue; // skip empty bins
+            continue;
         }
+        double pmf = pmf_calc(LenHist[L], TotalLengths);
+        double ccdf = (TotalLengths == 0) ? 0.0 : (100.0 * (double) remaining / (double) TotalLengths);
 
-        double percentage = 100.0 * (double) LenHist[L] / (double) TotalLengths;
-        printf("  Length %hu: %.3f%% (%zu)\n", L, percentage, LenHist[L]);
+        printf("  %*hu %*.3f%% %*.3f%% %*lu\n", W, (unsigned short) L, W, pmf, W, ccdf, W, LenHist[L]);
+
+        if (remaining >= LenHist[L]) {
+            remaining -= LenHist[L];
+        }
     }
     printf("\n");
 
-    // Number of paths per node
-    printf("Average number of paths per node: %.3f\n", (double)AvgPaths / (double) TotalTypes);
+    // Paths per node
+    double avg = (TotalTypes == 0) ? 0.0 : ((double) AvgPaths / (double) TotalTypes);
+    printf("Average number of paths per node: %.3f\n", avg);
     printf("\n");
+}
+
+void PrintStats(void) {
+    PrintStatsColumns(16);
 }
