@@ -104,6 +104,10 @@ void load_adj(const char *path, RoutingTable **tab) {
     }
 
     for (unsigned uu = 0; uu <= 65535u; uu++) {
+        if (tab[uu] == NULL) {
+            continue;
+        }
+
         for (RoutingTable *e = tab[uu]; e; e = e->next) {
             if (e->time) {
                 continue; // Already linked, skip

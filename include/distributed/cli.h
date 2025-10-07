@@ -12,6 +12,7 @@ typedef enum {
     CLI_CMD_UNKNOWN,
     CLI_CMD_SIMUSIMPLE,
     CLI_CMD_SIMUCOMPLETE,
+    CLI_CMD_SIMUCOMPLETEALL,
 } cmd_type;
 
 typedef struct {

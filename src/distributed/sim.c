@@ -3,11 +3,16 @@
 #include "../../include/distributed/rng.h"
 #include "../../include/distributed/tab.h"
 #include "../../include/distributed/tl.h"
+#include "../../include/distributed/stats.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <float.h>
+
+static struct {
+    StableAllToggle fn;
+} toggle;
 
 static RoutingTable *g_adj[65536] = {0}; // file-scope cache
 static RoutingTable *tab_stl[65536] = {0};
@@ -210,27 +215,34 @@ void SimuSimple(const char *path, unsigned short t, double d) {
         process_event_simple(cal, stl, out, d);
     }
 
-    // Debug
-    printf("\nMessages exchanged: %zu\n\n", g_seq);
-    print_table(g_adj, stl, "Stable Routing");
+    if (toggle.fn) {
+        toggle.fn(g_adj, stl, t);
+    } else {
+        // Print stable routing and elapsed time
+        printf("\nMessages exchanged: %zu\n\n", g_seq);
+        print_table(g_adj, stl, "Stable Routing");
+        free_cached_adj();
+    }
 
     // Clean-up
     cal_free(cal);
     clear_table(stl);
-    free_cached_adj();
 }
 
 void SimuComplete(const char *path, unsigned short t, double d) {
     // Read and populate the information from the file
     if (!g_adj_loaded) {
         load_adj(path, g_adj);
-        load_stl_tab(tab_stl, g_adj);
         g_adj_loaded = true;
     }
 
     if (!g_adj[t]) {
         return;
     }
+
+    printf("Processing %d\n", t);
+    clear_table(tab_stl);
+    load_stl_tab(tab_stl, g_adj);
 
     Calendar *cal = cal_new();
     RoutingTable *stl[65536] = {0};
@@ -262,26 +274,47 @@ void SimuComplete(const char *path, unsigned short t, double d) {
         process_event_complete(cal, stl, out, d);
     }
 
-    // Debug
-    print_table(g_adj, stl, "Stable Routing");
+    if (toggle.fn) {
+        toggle.fn(g_adj, stl, t);
+    } else {
+        // Print stable routing and elapsed time
+        printf("\nMessages exchanged: %zu\n\n", g_seq);
+        print_table(g_adj, stl, "Stable Routing");
+        free_cached_adj();
+    }
 
     // Clean-up
     cal_free(cal);
     clear_table(stl);
     clear_table(tab_stl);
-    free_cached_adj();
+
+    for (unsigned i = 0; i <= 65535u; i++) {
+        for (RoutingTable *e = g_adj[i]; e; e = e->next) {
+            if (i < e->destination && e->time) {
+                *e->time = -DBL_MAX;
+            }
+        }
+    }
 }
 
 void SimuCompleteAll(const char *path, double d) {
-    // Iterate through all possible destinations
+    StatsReset();
+    toggle.fn = AccStats;
     time_t t0 = time(NULL);
 
+    // Iterate through all possible destinations
     for (unsigned t = 0; t <= 65535u; t++) {
-        // printf("Destination %d\n", t);
+        printf("Destination %d\n", t);
         SimuComplete(path, (unsigned short) t, d);
     }
+    toggle.fn = NULL;
 
     // Print elapsed time and stats
     double secs = difftime(time(NULL), t0);
     printf("\nElapsed: %.2f minutes (%.0f s)\n\n", secs / 60.0, secs);
+
+    PrintStats();
+
+    // Free cached adjacency lists
+    free_cached_adj();
 }

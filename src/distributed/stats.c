@@ -1,5 +1,5 @@
-#include "../../include/sequential/stats.h"
-#include "../../include/sequential/tl.h"
+#include "../../include/distributed/stats.h"
+#include "../../include/distributed/tl.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -18,13 +18,13 @@ void StatsReset(void) {
     AvgPaths = 0;
 }
 
-void AccStats(RoutingTable *adj[], RoutingTable *E_t[], unsigned short t) {
+void AccStats(RoutingTable *adj[], RoutingTable *stl[], unsigned short t) {
     for (unsigned u = 0; u <= 65535u; u++) {
-        if (!adj[u] || !E_t[u] || u == t)
+        if (!adj[u] || !stl[u] || u == t)
             continue;
 
-        tl_type tl = E_t[u]->type_length;
-        if (E_t[u]->next != NULL) {
+        tl_type tl = stl[u]->type_length;
+        if (stl[u]->next != NULL) {
             AvgPaths = AvgPaths + 1;
         }
 
@@ -65,7 +65,7 @@ void PrintStatsColumns(int col_width) {
     // Lengths
     printf("Lengths:\n");
     printf("%*s %*s %*s %*s\n", W, "Length", W, "PMF", W, "CCDF", W, "Count");
-    unsigned long remaining = TotalLengths; /* mass for X >= current L */
+    unsigned long remaining = TotalLengths; // mass for X >= current L
     for (unsigned L = 1; L <= 65535u; L++) {
         if (LenHist[L] == 0) {
             continue;

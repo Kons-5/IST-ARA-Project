@@ -76,10 +76,10 @@ void StableTypeLength(const char *path, unsigned short t) {
 
         for (RoutingTable *e = g_adj[v]; e != NULL; e = e->next) {
             unsigned short u = e->destination;
-            tl_type extension = tl_extend(TL_SWAP(e->type_length), E_t[v]->type_length);
 
             // Relaxation of u from v
-            if (tl_compare_stable(E_t[u]->type_length, extension) >= 0) {
+            tl_type extension = tl_extend(TL_SWAP(e->type_length), E_t[v]->type_length);
+            if (tl_compare_stable(E_t[u]->type_length, extension) > 0) {
                 E_t[u]->type_length = extension; // iff the extension is better
                 E_t[u]->next_hop = v;
 
@@ -100,7 +100,7 @@ void StableTypeLength(const char *path, unsigned short t) {
                             break;
 
                         default:
-                            continue;
+                            break;
                     }
                 }
             }
@@ -126,10 +126,9 @@ void StableTypeLength(const char *path, unsigned short t) {
 void StableAll(const char *path) {
     StatsReset();
     toggle.fn = AccStats;
-
-    // Iterate through all possible destinations
     time_t t0 = time(NULL);
 
+    // Iterate through all possible destinations
     for (unsigned t = 0; t <= 65535u; t++) {
         // printf("Destination %d\n", t);
         StableTypeLength(path, (unsigned short) t);
@@ -140,7 +139,7 @@ void StableAll(const char *path) {
     double secs = difftime(time(NULL), t0);
     printf("\nElapsed: %.2f minutes (%.0f s)\n\n", secs / 60.0, secs);
 
-    PrintStats(); // results
+    PrintStats();
 
     // Free cached adjacency lists
     free_cached_adj();

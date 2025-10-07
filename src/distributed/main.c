@@ -47,7 +47,12 @@ int main(int argc, char *argv[]) {
                 SimuComplete(args.path, args.t, args.d);
                 break;
 
+            case CLI_CMD_SIMUCOMPLETEALL:
+                SimuCompleteAll(args.path, args.d);
+                break;
+
             default:
+                fprintf(stderr, "Unknown command: `%s'\n\n", buffer);
                 break;
         }
     }
