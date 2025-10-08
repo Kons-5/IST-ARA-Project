@@ -153,9 +153,9 @@ static void process_event_complete(Calendar *cal, RoutingTable **stl, Event even
     // printf("Event (ext) Link uv: tl.type=%hu, tl.len=%hu\n\n", entry.type, entry.len);
     // }
 
-    if (tl_compare(slot->type_length, entry) == 0) {
-        return; // No need to propagate nor update stl[u]
-    }
+    // if (tl_compare(slot->type_length, entry) == 0) {
+    //     return; // No need to propagate nor update stl[u]
+    // }
 
     // Update cached entry for neighbor v
     slot->type_length = entry; // new value of tab_u[v]
