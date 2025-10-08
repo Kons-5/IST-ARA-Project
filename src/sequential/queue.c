@@ -113,7 +113,7 @@ unsigned long long q_size(const Queue *q) {
     return q ? q->size : 0u;
 }
 
-void print(Queue *q) {
+void print(const Queue *q) {
     if (!q) {
         return;
     }

@@ -53,7 +53,6 @@ void StableTypeLength(const char *path, unsigned short t) {
     q_push(customerQ, t);
 
     // Inverted BFS with our routing algebra
-    bool discovered[65536] = {false};
     while (any_nonempty(customerQ, peerQ, providerQ)) {
         unsigned short v;
 
@@ -67,77 +66,32 @@ void StableTypeLength(const char *path, unsigned short t) {
             q_pop(providerQ, &v);
         }
 
-        // Check if node v has been dequeued before
-        if (discovered[v]) {
-            continue;
-        } else {
-            discovered[v] = true;
-        }
-
         for (RoutingTable *e = g_adj[v]; e != NULL; e = e->next) {
             unsigned short u = e->destination;
 
             // Relaxation of u from v
             tl_type extension = tl_extend(TL_SWAP(e->type_length), E_t[v]->type_length);
-
-            if ((u == 9910 && v == 10201) || u == 10201) {
-                printf("discovered[10201] = %d\n", discovered[10201]);
-                printf("For u = %hu from E_t[%d]=(type=%d,len=%hu)  l=(type=%d,len=%hu)\nExtension: (type=%d,len=%hu) ⊕ "
-                       "(type=%d,len=%hu) = (type=%d,len=%hu)\nComparison: old (type=%d,len=%hu) vs (type=%d,len=%hu) = %d\n\n",
-                       u,
-                       v,
-                       E_t[v]->type_length.type,
-                       E_t[v]->type_length.len,
-                       TL_SWAP(e->type_length).type,
-                       TL_SWAP(e->type_length).len,
-                       E_t[v]->type_length.type,
-                       E_t[v]->type_length.len,
-                       TL_SWAP(e->type_length).type,
-                       TL_SWAP(e->type_length).len,
-                       extension.type,
-                       extension.len,
-                       E_t[u]->type_length.type,
-                       E_t[u]->type_length.len,
-                       extension.type,
-                       extension.len,
-                       tl_compare_stable(E_t[u]->type_length, extension));
-            }
-
             if (tl_compare_stable(E_t[u]->type_length, extension) > 0) {
                 E_t[u]->type_length = extension; // iff the extension is better
                 E_t[u]->next_hop = v;
 
                 // Enqueue neighbor u in the queue from the POV of u
                 // (i.e.: if u sees v as a provider place it in the provider queue)
-                if (!discovered[u]) {
-                    switch (TL_SWAP_ATTR(e->type_length.type)) {
-                        case TL_CUSTOMER:
-                            if (u == 10201) {
-                                printf("10201 customer\n");
-                            }
+                switch (TL_SWAP_ATTR(e->type_length.type)) {
+                    case TL_CUSTOMER:
+                        q_push(customerQ, u);
+                        break;
 
-                            q_push(customerQ, u);
-                            break;
+                    case TL_PEER:
+                        q_push(peerQ, u);
+                        break;
 
-                        case TL_PEER:
-                            if (u == 10201) {
-                                printf("10201 peer\n");
-                            }
+                    case TL_PROVIDER:
+                        q_push(providerQ, u);
+                        break;
 
-                            q_push(peerQ, u);
-                            break;
-
-                        case TL_PROVIDER:
-                            if (u == 10201) {
-                                printf("10201 provider\n");
-                            }
-
-                            q_push(providerQ, u);
-                            break;
-
-                        default:
-                            break;
-                    }
+                    default:
+                        break;
                 }
             }
         }
@@ -147,7 +101,7 @@ void StableTypeLength(const char *path, unsigned short t) {
         toggle.fn(g_adj, E_t, t);
     } else {
         // Print stable routing and elapsed time
-        // print_table(g_adj, E_t, "Stable Routing");
+        print_table(g_adj, E_t, "Stable Routing");
         free_cached_adj();
     }
 
@@ -208,7 +162,6 @@ void OptimalTypeLength(const char *path, unsigned short t) {
     q_push(customerQ, t);
 
     // Inverted BFS with our routing algebra
-    bool discovered[65536] = {false};
     while (any_nonempty(customerQ, peerQ, providerQ)) {
         unsigned short v;
 
@@ -220,13 +173,6 @@ void OptimalTypeLength(const char *path, unsigned short t) {
             q_pop(peerQ, &v);
         } else {
             q_pop(providerQ, &v);
-        }
-
-        // Check if node v has been dequeued before
-        if (discovered[v]) {
-            continue;
-        } else {
-            discovered[v] = true;
         }
 
         for (RoutingTable *e = g_adj[v]; e != NULL; e = e->next) {
@@ -272,23 +218,21 @@ void OptimalTypeLength(const char *path, unsigned short t) {
 
                 // Enqueue neighbor u in the queue from the POV of u
                 // (i.e.: if u sees v as a provider place it in the provider queue)
-                if (!discovered[u]) {
-                    switch (TL_SWAP_ATTR(e->type_length.type)) {
-                        case TL_CUSTOMER:
-                            q_push(customerQ, u);
-                            break;
+                switch (TL_SWAP_ATTR(e->type_length.type)) {
+                    case TL_CUSTOMER:
+                        q_push(customerQ, u);
+                        break;
 
-                        case TL_PEER:
-                            q_push(peerQ, u);
-                            break;
+                    case TL_PEER:
+                        q_push(peerQ, u);
+                        break;
 
-                        case TL_PROVIDER:
-                            q_push(providerQ, u);
-                            break;
+                    case TL_PROVIDER:
+                        q_push(providerQ, u);
+                        break;
 
-                        default:
-                            continue;
-                    }
+                    default:
+                        continue;
                 }
             }
         }
