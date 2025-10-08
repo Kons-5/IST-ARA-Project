@@ -97,9 +97,9 @@ static void process_event_simple(Calendar *cal, RoutingTable **stl, Event event,
 
         // Advertise to all in-neighbors of u
         for (RoutingTable *e = g_adj[u]; e; e = e->next) {
-            if (e->destination == v) {
-                continue;
-            }
+            // if (e->destination == v) {
+            //     continue;
+            // }
 
             Event next = {
                 .time = event.time,
@@ -144,14 +144,16 @@ static void process_event_complete(Calendar *cal, RoutingTable **stl, Event even
     // Compute new entry of tab_u[v]
     tl_type entry = tl_extend(edge_uv->type_length, event.adv);
 
-    // if (g_seq > 0 && g_seq < 10) {
-    // printf("\nProcessing event %lu (from %hu to %hu):\n", g_seq, v, u);
-    // printf("stl[u=%hu]: tl.type=%hu, tl.len=%hu\n", u, old_best.type, old_best.len);
-    // printf("tab(u=%hu)[v=%hu]: tl.type=%hu, tl.len=%hu\n", u, v, slot->type_length.type, slot->type_length.len);
-    // printf("Event: tl.type=%hu, tl.len=%hu\n", event.adv.type, event.adv.len);
-    // printf("Link uv: tl.type=%hu, tl.len=%hu\n", edge_uv->type_length.type, edge_uv->type_length.len);
-    // printf("Event (ext) Link uv: tl.type=%hu, tl.len=%hu\n\n", entry.type, entry.len);
-    // }
+    if (u == 9910) {
+        printf("\nProcessing event %lu (from %hu to %hu):\n", g_seq, v, u);
+        printf("stl[u=%hu]: tl.type=%hu, tl.len=%hu\n", u, old_best.type, old_best.len);
+        for (RoutingTable *p = tab_stl[u]; p; p = p->next) {
+            printf("tab(u=%hu)[v=%hu]: tl.type=%hu, tl.len=%hu\n", u, p->destination, p->type_length.type, p->type_length.len);
+        }
+        printf("Event: tl.type=%hu, tl.len=%hu\n", event.adv.type, event.adv.len);
+        printf("Link uv: tl.type=%hu, tl.len=%hu\n", edge_uv->type_length.type, edge_uv->type_length.len);
+        printf("Event (ext) Link uv: tl.type=%hu, tl.len=%hu\n\n", entry.type, entry.len);
+    }
 
     // if (tl_compare(slot->type_length, entry) == 0) {
     //     return; // No need to propagate nor update stl[u]
@@ -165,7 +167,7 @@ static void process_event_complete(Calendar *cal, RoutingTable **stl, Event even
     unsigned short new_hop = 0;
     for (RoutingTable *p = tab_stl[u]; p; p = p->next) {
         tl_type c = p->type_length;
-        if (tl_compare(new_best, c) > 0) {
+        if (tl_compare(new_best, c) >= 0) {
             new_best = c;
             new_hop = p->destination;
         }
@@ -174,12 +176,20 @@ static void process_event_complete(Calendar *cal, RoutingTable **stl, Event even
     stl[u]->type_length = new_best; // most prefered from tab_u[v]
     stl[u]->next_hop = new_hop;     // most prefered from tab_u[v]
 
+    if (u == 9910) {
+        printf("\nNEW stl[u=%hu]: tl.type=%hu, tl.len=%hu\n", u, old_best.type, old_best.len);
+        for (RoutingTable *p = tab_stl[u]; p; p = p->next) {
+            printf("NEW tab(u=%hu)[v=%hu]: tl.type=%hu, tl.len=%hu\n", u, p->destination, p->type_length.type, p->type_length.len);
+        }
+        printf("\n");
+    }
+
     // Advertize to all in-neighbors
     if (tl_compare(old_best, new_best) != 0 || old_hop != new_hop) {
         for (RoutingTable *e = g_adj[u]; e; e = e->next) {
-            if (old_hop != new_hop && new_hop == e->destination) {
-                continue; // don't propagate to original sender
-            }
+            // if (old_hop != new_hop && new_hop == e->destination) {
+            //     continue; // don't propagate to original sender
+            // }
 
             Event next = (Event){
                 .time = event.time,
@@ -299,10 +309,9 @@ void SimuComplete(const char *path, unsigned short t, double d) {
         // printf("Reading event from %hu to %hu...\n", out.from, out.to);
         process_event_complete(cal, stl, out, d);
     }
+    // cal_print_all_seqs(cal);
 
     if (toggle.fn) {
-        toggle.fn(g_adj, stl, t);
-
         for (unsigned i = 0; i <= 65535u; i++) {
             for (RoutingTable *e = g_adj[i]; e; e = e->next) {
                 if (i < e->destination && e->time) {
@@ -313,7 +322,9 @@ void SimuComplete(const char *path, unsigned short t, double d) {
     } else {
         // Print stable routing and elapsed time
         printf("\nMessages exchanged: %zu\n\n", g_seq);
-        print_table(g_adj, stl, "Stable Routing");
+        // print_table(g_adj, stl, "Stable Routing");
+        // AccStats(g_adj, stl, t);
+        // PrintStats();
         free_cached_adj();
     }
 
