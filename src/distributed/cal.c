@@ -65,6 +65,22 @@ static void sift_down(Event *a, size_t n, size_t i) {
     }
 }
 
+static int cal_grow(Calendar *c) {
+    if (!c) {
+        return -1;
+    }
+
+    size_t new_cap = c->cap ? c->cap * 2 : CAL_MAX_EVENTS; // double size
+    Event *na = (Event *) realloc(c->a, new_cap * sizeof(Event));
+    if (!na) {
+        return -1;
+    }
+
+    c->a = na;
+    c->cap = new_cap;
+    return 0;
+}
+
 Calendar *cal_new(void) {
     Calendar *c = (Calendar *) malloc(sizeof(Calendar));
     if (!c) {
@@ -95,7 +111,9 @@ int cal_push(Calendar *c, Event e) {
         return -1;
     }
     if (c->n == c->cap) {
-        return -1; // heap is full
+        if (cal_grow(c) != 0) {
+            return -1;
+        }
     }
 
     c->a[c->n] = e;

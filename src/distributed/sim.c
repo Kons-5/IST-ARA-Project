@@ -92,83 +92,67 @@ static void process_event_simple(Calendar *cal, RoutingTable **stl, Event event,
 static void process_event_complete(Calendar *cal, RoutingTable **stl, Event event, double d) {
     unsigned short v = event.from;
     unsigned short u = event.to;
+    tl_type old_best = stl[u]->type_length;
+    unsigned short old_hop = stl[u]->next_hop;
 
     RoutingTable *edge_vu = NULL;
-    RoutingTable *slot = NULL;
-    RoutingTable *a = g_adj[u];
-    RoutingTable *b = tab_stl[u];
-    while (a && b) {
+    for (RoutingTable *a = g_adj[u]; a; a = a->next) {
         if (a->destination == v) {
             edge_vu = a;
+            break;
+        }
+    }
+
+    RoutingTable *slot = NULL;
+    for (RoutingTable *b = tab_stl[u]; b; b = b->next) {
+        if (b->destination == v) {
             slot = b;
             break;
         }
-        a = a->next;
-        b = b->next;
     }
+
     if (!edge_vu || !slot) {
         return;
     }
 
-    // compute new candidate via v
-    tl_type new_cand = tl_extend(edge_vu->type_length, event.adv);
-    if (!tl_is_invalid(slot->type_length) && tl_compare(slot->type_length, new_cand) == 0) {
-        return;
+    // Compute new candidate via v
+    tl_type candidate = tl_extend(edge_vu->type_length, event.adv);
+    if (tl_is_invalid(candidate) || tl_compare(slot->type_length, candidate) == 0) {
+        return; // No need to propagate
     }
 
-    // update cached candidate for neighbor v
-    tl_type old_cand = slot->type_length;
-    slot->type_length = new_cand;
+    // Update cached candidate for neighbor v
+    slot->type_length = candidate;
 
-    tl_type old_best = stl[u]->type_length;
-    unsigned short old_hop = stl[u]->next_hop;
-    int updated_is_best = (old_hop == v);
-
-    // If updated neighbor is not the current best
-    if (!updated_is_best) {
-        if (tl_is_invalid(old_best) || tl_compare(new_cand, old_best) < 0) {
-            stl[u]->type_length = new_cand;
-            stl[u]->next_hop = v;
-
-            // Advertise to all in-neighbors of u
-            for (RoutingTable *e = g_adj[u]; e; e = e->next) {
-                Event next = (Event){.time = event.time, .adv = stl[u]->type_length, .to = e->destination, .from = u};
-                schedule(cal, next, d);
-            }
-        }
-        return; // Nothing else to do
-    }
-
-    // If it improved or stayed equal, keep it and (if changed) advertise
-    if (tl_compare(new_cand, old_cand) <= 0) {
-        if (tl_compare(new_cand, old_best) != 0) {
-            stl[u]->type_length = new_cand;
-            // next_hop stays v
-            for (RoutingTable *e = g_adj[u]; e; e = e->next) {
-                Event next = (Event){.time = event.time, .adv = stl[u]->type_length, .to = e->destination, .from = u};
-                schedule(cal, next, d);
-            }
-        }
-        return;
-    }
-
-    // If it got worse rescan tab_stl[u] once to find the new best
+    // Rescan tab_stl[u] once to find the new best
     tl_type best = tl_invalid();
-    unsigned short best_hop = old_hop; // replaced if we find better
+    unsigned short best_hop = 0;
     for (RoutingTable *p = tab_stl[u]; p; p = p->next) {
         tl_type c = p->type_length;
-        if (!tl_is_invalid(c) && (tl_is_invalid(best) || tl_compare(c, best) < 0)) {
+        if (tl_compare(best, c) > 0) {
             best = c;
             best_hop = p->destination;
         }
     }
 
-    if (tl_compare(best, old_best) != 0) {
-        stl[u]->type_length = best;
-        stl[u]->next_hop = best_hop;
+    stl[u]->type_length = best;
+    stl[u]->next_hop = best_hop;
 
+    // Advertize to all in-neighbors
+    bool changed = (tl_compare(old_best, best) != 0) || (old_hop != best_hop);
+    if (changed) {
         for (RoutingTable *e = g_adj[u]; e; e = e->next) {
-            Event next = (Event){.time = event.time, .adv = stl[u]->type_length, .to = e->destination, .from = u};
+            // if (e->destination == v) {
+            //     continue;
+            // }
+
+            Event next = (Event){
+                .time = event.time,
+                .adv = stl[u]->type_length,
+                .to = e->destination,
+                .from = u,
+            };
+
             schedule(cal, next, d);
         }
     }
@@ -240,7 +224,7 @@ void SimuComplete(const char *path, unsigned short t, double d) {
         return;
     }
 
-    printf("Processing %d\n", t);
+    // printf("Processing %d\n", t);
     clear_table(tab_stl);
     load_stl_tab(tab_stl, g_adj);
 
@@ -271,11 +255,20 @@ void SimuComplete(const char *path, unsigned short t, double d) {
             break;
         }
 
+        // printf("seq: %llu\n", out.seq);
         process_event_complete(cal, stl, out, d);
     }
 
     if (toggle.fn) {
         toggle.fn(g_adj, stl, t);
+
+        for (unsigned i = 0; i <= 65535u; i++) {
+            for (RoutingTable *e = g_adj[i]; e; e = e->next) {
+                if (i < e->destination && e->time) {
+                    *e->time = -DBL_MAX;
+                }
+            }
+        }
     } else {
         // Print stable routing and elapsed time
         printf("\nMessages exchanged: %zu\n\n", g_seq);
@@ -287,14 +280,6 @@ void SimuComplete(const char *path, unsigned short t, double d) {
     cal_free(cal);
     clear_table(stl);
     clear_table(tab_stl);
-
-    for (unsigned i = 0; i <= 65535u; i++) {
-        for (RoutingTable *e = g_adj[i]; e; e = e->next) {
-            if (i < e->destination && e->time) {
-                *e->time = -DBL_MAX;
-            }
-        }
-    }
 }
 
 void SimuCompleteAll(const char *path, double d) {
@@ -304,7 +289,7 @@ void SimuCompleteAll(const char *path, double d) {
 
     // Iterate through all possible destinations
     for (unsigned t = 0; t <= 65535u; t++) {
-        printf("Destination %d\n", t);
+        // printf("Destination %d\n", t);
         SimuComplete(path, (unsigned short) t, d);
     }
     toggle.fn = NULL;
