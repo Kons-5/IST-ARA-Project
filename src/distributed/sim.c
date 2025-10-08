@@ -35,6 +35,21 @@ static void schedule(Calendar *cal, Event event, double d) {
     unsigned short u = event.to;
 
     if (u == g_dst) {
+        RoutingTable *e_vu = NULL;
+        for (RoutingTable *e = g_adj[u]; e; e = e->next) {
+            if (e->destination == v) {
+                e_vu = e;
+                break;
+            }
+        }
+
+        if (e_vu && e_vu->time) {
+            double prev_time = *e_vu->time;
+            double arrival_time = event.time + 1.0 + rng_uniform(0.0, d);
+            arrival_time = (arrival_time > prev_time + 0.01) ? arrival_time : prev_time + 0.01;
+
+            *e_vu->time = arrival_time;
+        }
         return;
     }
 
@@ -82,6 +97,10 @@ static void process_event_simple(Calendar *cal, RoutingTable **stl, Event event,
 
         // Advertise to all in-neighbors of u
         for (RoutingTable *e = g_adj[u]; e; e = e->next) {
+            if (e->destination == v) {
+                continue;
+            }
+
             Event next = {
                 .time = event.time,
                 .adv = stl[u]->type_length,
@@ -98,7 +117,7 @@ static void process_event_complete(Calendar *cal, RoutingTable **stl, Event even
     unsigned short v = event.from;
     unsigned short u = event.to;
 
-    RoutingTable *edge_uv = NULL;
+    RoutingTable *edge_uv = NULL; // find the link
     for (RoutingTable *a = g_adj[u]; a; a = a->next) {
         if (a->destination == v) {
             edge_uv = a;
@@ -106,7 +125,7 @@ static void process_event_complete(Calendar *cal, RoutingTable **stl, Event even
         }
     }
 
-    RoutingTable *slot = NULL;
+    RoutingTable *slot = NULL; // find stored tab_u[v]
     for (RoutingTable *b = tab_stl[u]; b; b = b->next) {
         if (b->destination == v) {
             slot = b;
@@ -122,8 +141,8 @@ static void process_event_complete(Calendar *cal, RoutingTable **stl, Event even
     tl_type old_best = stl[u]->type_length;
     unsigned short old_hop = stl[u]->next_hop;
 
-    // Compute new candidate via v
-    tl_type candidate = tl_extend(edge_uv->type_length, event.adv);
+    // Compute new entry of tab_u[v]
+    tl_type entry = tl_extend(edge_uv->type_length, event.adv);
 
     // if (g_seq > 0 && g_seq < 10) {
     // printf("\nProcessing event %lu (from %hu to %hu):\n", g_seq, v, u);
@@ -131,17 +150,17 @@ static void process_event_complete(Calendar *cal, RoutingTable **stl, Event even
     // printf("tab(u=%hu)[v=%hu]: tl.type=%hu, tl.len=%hu\n", u, v, slot->type_length.type, slot->type_length.len);
     // printf("Event: tl.type=%hu, tl.len=%hu\n", event.adv.type, event.adv.len);
     // printf("Link uv: tl.type=%hu, tl.len=%hu\n", edge_uv->type_length.type, edge_uv->type_length.len);
-    // printf("Event (ext) Link uv: tl.type=%hu, tl.len=%hu\n\n", candidate.type, candidate.len);
+    // printf("Event (ext) Link uv: tl.type=%hu, tl.len=%hu\n\n", entry.type, entry.len);
     // }
 
-    if (tl_compare(slot->type_length, candidate) == 0) {
-        return; // No need to propagate
+    if (tl_compare(slot->type_length, entry) == 0) {
+        return; // No need to propagate nor update stl[u]
     }
 
-    // Update cached candidate for neighbor v
-    slot->type_length = candidate;
+    // Update cached entry for neighbor v
+    slot->type_length = entry; // new value of tab_u[v]
 
-    // Rescan tab_stl[u] once to find the new best
+    // Scan tab_stl[u] to find the new best
     tl_type new_best = tl_invalid();
     unsigned short new_hop = 0;
     for (RoutingTable *p = tab_stl[u]; p; p = p->next) {
@@ -152,14 +171,14 @@ static void process_event_complete(Calendar *cal, RoutingTable **stl, Event even
         }
     }
 
-    stl[u]->type_length = new_best;
-    stl[u]->next_hop = new_hop;
+    stl[u]->type_length = new_best; // most prefered from tab_u[v]
+    stl[u]->next_hop = new_hop;     // most prefered from tab_u[v]
 
     // Advertize to all in-neighbors
     if (tl_compare(old_best, new_best) != 0 || old_hop != new_hop) {
         for (RoutingTable *e = g_adj[u]; e; e = e->next) {
             if (old_hop != new_hop && new_hop == e->destination) {
-                continue;
+                continue; // don't propagate to original sender
             }
 
             Event next = (Event){
