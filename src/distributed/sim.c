@@ -139,8 +139,7 @@ static void process_event_complete(Calendar *cal, RoutingTable **stl, Event even
     stl[u]->next_hop = best_hop;
 
     // Advertize to all in-neighbors
-    bool changed = (tl_compare(old_best, best) != 0) || (old_hop != best_hop);
-    if (changed) {
+    if (tl_compare(old_best, best) != 0 || old_hop != best_hop) {
         for (RoutingTable *e = g_adj[u]; e; e = e->next) {
             // if (e->destination == v) {
             //     continue;
