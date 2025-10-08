@@ -14,7 +14,7 @@ bool tl_is_invalid(tl_type x) {
 
 int tl_compare(tl_type a, tl_type b) {
     if (tl_is_invalid(a) && tl_is_invalid(b)) {
-        return -1; // both invalid
+        return 0; // both invalid
     } else if (tl_is_invalid(a)) {
         return 1; // b wins
     } else if (tl_is_invalid(b)) {

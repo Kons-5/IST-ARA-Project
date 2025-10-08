@@ -18,6 +18,7 @@ static RoutingTable *g_adj[65536] = {0}; // file-scope cache
 static RoutingTable *tab_stl[65536] = {0};
 static bool g_adj_loaded = false;
 static unsigned long g_seq = 0;
+static unsigned short g_dst;
 
 static void free_cached_adj(void) {
     if (!g_adj_loaded) {
@@ -32,6 +33,10 @@ static void free_cached_adj(void) {
 static void schedule(Calendar *cal, Event event, double d) {
     unsigned short v = event.from;
     unsigned short u = event.to;
+
+    if (u == g_dst) {
+        return;
+    }
 
     RoutingTable *e_vu = NULL;
     for (RoutingTable *e = g_adj[u]; e; e = e->next) {
@@ -59,19 +64,19 @@ static void process_event_simple(Calendar *cal, RoutingTable **stl, Event event,
     unsigned short v = event.from;
     unsigned short u = event.to;
 
-    RoutingTable *edge_vu = NULL;
+    RoutingTable *edge_uv = NULL;
     for (RoutingTable *e = g_adj[u]; e; e = e->next) {
         if (e->destination == v) {
-            edge_vu = e;
+            edge_uv = e;
             break;
         }
     }
-    if (!edge_vu) {
+    if (!edge_uv) {
         return;
     }
 
-    tl_type proposed = tl_extend(edge_vu->type_length, event.adv);
-    if (tl_compare(stl[u]->type_length, proposed) >= 0) {
+    tl_type proposed = tl_extend(edge_uv->type_length, event.adv);
+    if (tl_compare(stl[u]->type_length, proposed) > 0) {
         stl[u]->type_length = proposed;
         stl[u]->next_hop = v;
 
@@ -92,13 +97,11 @@ static void process_event_simple(Calendar *cal, RoutingTable **stl, Event event,
 static void process_event_complete(Calendar *cal, RoutingTable **stl, Event event, double d) {
     unsigned short v = event.from;
     unsigned short u = event.to;
-    tl_type old_best = stl[u]->type_length;
-    unsigned short old_hop = stl[u]->next_hop;
 
-    RoutingTable *edge_vu = NULL;
+    RoutingTable *edge_uv = NULL;
     for (RoutingTable *a = g_adj[u]; a; a = a->next) {
         if (a->destination == v) {
-            edge_vu = a;
+            edge_uv = a;
             break;
         }
     }
@@ -111,13 +114,27 @@ static void process_event_complete(Calendar *cal, RoutingTable **stl, Event even
         }
     }
 
-    if (!edge_vu || !slot) {
+    if (!edge_uv || !slot) {
         return;
     }
 
+    // Current most prefered stable state
+    tl_type old_best = stl[u]->type_length;
+    unsigned short old_hop = stl[u]->next_hop;
+
     // Compute new candidate via v
-    tl_type candidate = tl_extend(edge_vu->type_length, event.adv);
-    if (tl_is_invalid(candidate) || tl_compare(slot->type_length, candidate) == 0) {
+    tl_type candidate = tl_extend(edge_uv->type_length, event.adv);
+
+    // if (g_seq > 0 && g_seq < 10) {
+    // printf("\nProcessing event %lu (from %hu to %hu):\n", g_seq, v, u);
+    // printf("stl[u=%hu]: tl.type=%hu, tl.len=%hu\n", u, old_best.type, old_best.len);
+    // printf("tab(u=%hu)[v=%hu]: tl.type=%hu, tl.len=%hu\n", u, v, slot->type_length.type, slot->type_length.len);
+    // printf("Event: tl.type=%hu, tl.len=%hu\n", event.adv.type, event.adv.len);
+    // printf("Link uv: tl.type=%hu, tl.len=%hu\n", edge_uv->type_length.type, edge_uv->type_length.len);
+    // printf("Event (ext) Link uv: tl.type=%hu, tl.len=%hu\n\n", candidate.type, candidate.len);
+    // }
+
+    if (tl_compare(slot->type_length, candidate) == 0) {
         return; // No need to propagate
     }
 
@@ -125,25 +142,25 @@ static void process_event_complete(Calendar *cal, RoutingTable **stl, Event even
     slot->type_length = candidate;
 
     // Rescan tab_stl[u] once to find the new best
-    tl_type best = tl_invalid();
-    unsigned short best_hop = 0;
+    tl_type new_best = tl_invalid();
+    unsigned short new_hop = 0;
     for (RoutingTable *p = tab_stl[u]; p; p = p->next) {
         tl_type c = p->type_length;
-        if (tl_compare(best, c) > 0) {
-            best = c;
-            best_hop = p->destination;
+        if (tl_compare(new_best, c) > 0) {
+            new_best = c;
+            new_hop = p->destination;
         }
     }
 
-    stl[u]->type_length = best;
-    stl[u]->next_hop = best_hop;
+    stl[u]->type_length = new_best;
+    stl[u]->next_hop = new_hop;
 
     // Advertize to all in-neighbors
-    if (tl_compare(old_best, best) != 0 || old_hop != best_hop) {
+    if (tl_compare(old_best, new_best) != 0 || old_hop != new_hop) {
         for (RoutingTable *e = g_adj[u]; e; e = e->next) {
-            // if (e->destination == v) {
-            //     continue;
-            // }
+            if (old_hop != new_hop && new_hop == e->destination) {
+                continue;
+            }
 
             Event next = (Event){
                 .time = event.time,
@@ -167,6 +184,8 @@ void SimuSimple(const char *path, unsigned short t, double d) {
     if (!g_adj[t]) {
         return;
     }
+
+    g_dst = t;
 
     Calendar *cal = cal_new();
     RoutingTable *stl[65536] = {0};
@@ -223,6 +242,8 @@ void SimuComplete(const char *path, unsigned short t, double d) {
         return;
     }
 
+    g_dst = t;
+
     // printf("Processing %d\n", t);
     clear_table(tab_stl);
     load_stl_tab(tab_stl, g_adj);
@@ -244,6 +265,7 @@ void SimuComplete(const char *path, unsigned short t, double d) {
             .from = t,
         };
 
+        // printf("Sending event from %hu to %hu...\n", t, e->destination);
         schedule(cal, event, d);
     }
 
@@ -255,6 +277,7 @@ void SimuComplete(const char *path, unsigned short t, double d) {
         }
 
         // printf("seq: %llu\n", out.seq);
+        // printf("Reading event from %hu to %hu...\n", out.from, out.to);
         process_event_complete(cal, stl, out, d);
     }
 
