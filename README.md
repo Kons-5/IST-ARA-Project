@@ -1,7 +1,3 @@
-# IST-ARA-Project: Internet Routing
-## Sequential and distributed computation of routing paths across the internet
+# Internet Routing: Sequential and distributed computation of routing paths across the internet
 
 This repository contains lab materials for the Network Algorithms and Applications IST course.
-
-# TODO
--

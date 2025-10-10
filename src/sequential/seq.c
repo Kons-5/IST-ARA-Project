@@ -43,18 +43,9 @@ void StableTypeLength(const char *path, unsigned short t) {
     load_state(E_t, t);
 
     // Init queues for the three AS types
-    unsigned short lens[65536];
-    for (size_t i = 0; i < 65536; ++i) {
-        lens[i] = 65535u;
-    }
-
     Queue *customerQ = q_create();
     Queue *providerQ = q_create();
     Queue *peerQ = q_create();
-
-    q_bind_lengths(customerQ, lens, 65536u);
-    q_bind_lengths(peerQ, lens, 65536u);
-    q_bind_lengths(providerQ, lens, 65536u);
 
     // Init destination with small epsilon
     E_t[t]->type_length.type = TL_CUSTOMER;
@@ -83,7 +74,6 @@ void StableTypeLength(const char *path, unsigned short t) {
             if (tl_compare_stable(E_t[u]->type_length, extension) > 0) {
                 E_t[u]->type_length = extension; // iff the extension is better
                 E_t[u]->next_hop = v;
-                lens[u] = extension.len;
 
                 // Enqueue neighbor u in the queue from the POV of u
                 // (i.e.: if u sees v as a provider place it in the provider queue)
@@ -162,18 +152,9 @@ void OptimalTypeLength(const char *path, unsigned short t) {
     load_state(O_t, t);
 
     // Init queues for the three AS types
-    unsigned short lens[65536];
-    for (size_t i = 0; i < 65536; ++i) {
-        lens[i] = 65535u;
-    }
-
     Queue *customerQ = q_create();
     Queue *providerQ = q_create();
     Queue *peerQ = q_create();
-
-    q_bind_lengths(customerQ, lens, 65536u);
-    q_bind_lengths(peerQ, lens, 65536u);
-    q_bind_lengths(providerQ, lens, 65536u);
 
     // Init destination with small epsilon
     O_t[t]->type_length.type = TL_CUSTOMER;
