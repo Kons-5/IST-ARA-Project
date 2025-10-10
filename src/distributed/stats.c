@@ -9,16 +9,20 @@ unsigned long TotalTypes = 0;
 unsigned long AvgPaths = 0;
 unsigned long LenHist[65536];
 unsigned long TotalLengths = 0;
+unsigned long MsgHist[65536];
+unsigned long TotalMsgs = 0;
 
 void StatsReset(void) {
     memset(TypeCount, 0, sizeof TypeCount);
     memset(LenHist, 0, sizeof LenHist);
+    memset(MsgHist, 0, sizeof MsgHist);
     TotalTypes = 0;
     TotalLengths = 0;
     AvgPaths = 0;
+    TotalMsgs = 0;
 }
 
-void AccStats(RoutingTable *adj[], RoutingTable *stl[], unsigned short t) {
+void AccStats(RoutingTable *adj[], unsigned long seq, RoutingTable *stl[], unsigned short t) {
     for (unsigned u = 0; u <= 65535u; u++) {
         if (!adj[u] || !stl[u] || u == t)
             continue;
@@ -37,10 +41,64 @@ void AccStats(RoutingTable *adj[], RoutingTable *stl[], unsigned short t) {
         LenHist[tl.len]++;
         TotalLengths = TotalLengths + 1;
     }
+
+    // Store message count
+    MsgHist[t] = seq;
+    TotalMsgs = TotalMsgs + MsgHist[t];
 }
 
 static double pmf_calc(unsigned long num, unsigned long den) {
     return (den == 0) ? 0.0 : (100.0 * (double) num / (double) den);
+}
+
+static void PrintMsgsCCDF(int W) {
+    // MsgHist[t] = number of messages for destination t
+    unsigned long max_m = 0;
+    unsigned long dests = 0;
+
+    for (unsigned t = 0; t <= 65535u; ++t) {
+        unsigned long m = MsgHist[t];
+        if (m > 0) {
+            if (m > max_m) {
+                max_m = m;
+            }
+            dests++;
+        }
+    }
+
+    printf("Messages:\n");
+    printf("%*s %*s %*s %*s\n", W, "Msgs", W, "PMF", W, "CCDF", W, "Count");
+
+    if (dests == 0) {
+        printf("\n");
+        return;
+    }
+
+    unsigned long *H = (unsigned long *) calloc(max_m + 1, sizeof *H);
+    if (!H) {
+        printf("\n");
+        return;
+    }
+
+    for (unsigned t = 0; t <= 65535u; ++t) {
+        unsigned long m = MsgHist[t];
+        if (m > 0 && m <= max_m)
+            H[m]++;
+    }
+
+    unsigned long remaining = dests; // #destinations with msgs >= m
+    for (unsigned long m = 1; m <= max_m; ++m) {
+        if (H[m] == 0)
+            continue;
+        double pmf = pmf_calc(H[m], dests);
+        double ccdf = pmf_calc(remaining, dests);
+        printf("%*lu %*.3f%% %*.3f%% %*lu\n", W, m, W, pmf, W, ccdf, W, H[m]);
+        if (remaining >= H[m])
+            remaining -= H[m];
+    }
+    printf("\n");
+
+    free(H);
 }
 
 void PrintStatsColumns(int col_width) {
@@ -80,6 +138,9 @@ void PrintStatsColumns(int col_width) {
         }
     }
     printf("\n");
+
+    // Messages CCDF across destinations t
+    PrintMsgsCCDF(W);
 
     // Paths per node
     double avg = (TotalTypes == 0) ? 0.0 : ((double) AvgPaths / (double) TotalTypes);

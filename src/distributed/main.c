@@ -1,6 +1,5 @@
 #include "../../include/distributed/cli.h"
 #include "../../include/distributed/sim.h"
-#include "../../include/distributed/rng.h"
 #include <stdio.h>
 
 #define forever for (;;)
@@ -14,8 +13,6 @@ int main(int argc, char *argv[]) {
     char buffer[CLI_LINE_MAX];
     cli_args args = {0};
     cli_print_usage();
-
-    rng_seed(4u); // seed for RNG
 
     forever {
         cli_prompt();

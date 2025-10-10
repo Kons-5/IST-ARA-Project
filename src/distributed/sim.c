@@ -180,6 +180,7 @@ void SimuSimple(const char *path, unsigned short t, double d) {
         return;
     }
 
+    rng_seed((unsigned int) t);
     g_dst = t;
 
     Calendar *cal = cal_new();
@@ -213,7 +214,7 @@ void SimuSimple(const char *path, unsigned short t, double d) {
     }
 
     if (toggle.fn) {
-        toggle.fn(g_adj, stl, t);
+        toggle.fn(g_adj, g_seq, stl, t);
     } else {
         // Print stable routing and elapsed time
         printf("\nMessages exchanged: %zu\n\n", g_seq);
@@ -237,6 +238,7 @@ void SimuComplete(const char *path, unsigned short t, double d) {
         return;
     }
 
+    rng_seed((unsigned int) t);
     g_dst = t;
 
     // printf("Processing %d\n", t);
@@ -278,7 +280,7 @@ void SimuComplete(const char *path, unsigned short t, double d) {
     // cal_print_all_seqs(cal);
 
     if (toggle.fn) {
-        toggle.fn(g_adj, stl, t);
+        toggle.fn(g_adj, g_seq, stl, t);
 
         for (unsigned i = 0; i <= 65535u; i++) {
             for (RoutingTable *e = g_adj[i]; e; e = e->next) {
@@ -290,7 +292,7 @@ void SimuComplete(const char *path, unsigned short t, double d) {
     } else {
         // Print stable routing and elapsed time
         printf("\nMessages exchanged: %zu\n\n", g_seq);
-        // print_table(g_adj, stl, "Stable Routing");
+        print_table(g_adj, stl, "Stable Routing");
         free_cached_adj();
     }
 

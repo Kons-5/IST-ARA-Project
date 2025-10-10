@@ -8,10 +8,10 @@ extern unsigned long TotalTypes;
 extern unsigned long LenHist[65536];
 extern unsigned long TotalLengths;
 
-void AccStats(RoutingTable *adj[], RoutingTable *E_t[], unsigned short t);
+void AccStats(RoutingTable *adj[], unsigned long seq, RoutingTable *E_t[], unsigned short t);
 void StatsReset(void);
 void PrintStats(void);
 
-typedef void (*StableAllToggle)(RoutingTable *adj[], RoutingTable *E_t[], unsigned short t);
+typedef void (*StableAllToggle)(RoutingTable *adj[], unsigned long seq, RoutingTable *E_t[], unsigned short t);
 
 #endif
