@@ -133,21 +133,6 @@ static void process_event_complete(Calendar *cal, RoutingTable **stl, Event even
     // Compute new entry of tab_u[v]
     tl_type entry = tl_extend(edge_uv->type_length, event.adv);
 
-    // if (u == 15412) {
-    //     printf("\nProcessing event %lu (from %hu to %hu):\n", g_seq, v, u);
-    //     printf("stl[u=%hu]: tl.type=%hu, tl.len=%hu\n", u, old_best.type, old_best.len);
-    //     for (RoutingTable *p = tab_stl[u]; p; p = p->next) {
-    //         printf("tab(u=%hu)[v=%hu]: tl.type=%hu, tl.len=%hu\n", u, p->destination, p->type_length.type, p->type_length.len);
-    //     }
-    //     printf("Event: tl.type=%hu, tl.len=%hu\n", event.adv.type, event.adv.len);
-    //     printf("Link uv: tl.type=%hu, tl.len=%hu\n", edge_uv->type_length.type, edge_uv->type_length.len);
-    //     printf("Event (ext) Link uv: tl.type=%hu, tl.len=%hu\n\n", entry.type, entry.len);
-    // }
-
-    // if (tl_compare(slot->type_length, entry) == 0) {
-    //     return; // No need to propagate nor update stl[u]
-    // }
-
     // Update cached entry for neighbor v
     slot->type_length = entry; // new value of tab_u[v]
 
@@ -164,14 +149,6 @@ static void process_event_complete(Calendar *cal, RoutingTable **stl, Event even
 
     stl[u]->type_length = new_best; // most prefered from tab_u[v]
     stl[u]->next_hop = new_hop;     // most prefered from tab_u[v]
-
-    // if (u == 15412) {
-    //     printf("\nNEW stl[u=%hu]: tl.type=%hu, tl.len=%hu\n", u, old_best.type, old_best.len);
-    //     for (RoutingTable *p = tab_stl[u]; p; p = p->next) {
-    //         printf("NEW tab(u=%hu)[v=%hu]: tl.type=%hu, tl.len=%hu\n", u, p->destination, p->type_length.type, p->type_length.len);
-    //     }
-    //     printf("\n");
-    // }
 
     // Advertize to all in-neighbors
     if (tl_compare(old_best, new_best) != 0 || old_hop != new_hop) {

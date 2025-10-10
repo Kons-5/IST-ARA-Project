@@ -1,6 +1,6 @@
 TARGET_BASE := routing
 CC := gcc
-CSTD := -std=gnu99
+CSTD := -std=c99
 WARN := -Wall -Werror -Wpedantic -Wconversion
 CFLAGS_COMMON := $(CSTD) $(WARN)
 CFLAGS_REL := $(CFLAGS_COMMON) -O3

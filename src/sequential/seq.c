@@ -197,7 +197,7 @@ void OptimalTypeLength(const char *path, unsigned short t) {
             if (extension.type != TL_INVALID) {
                 // If extension has better type than head
                 if (better_by_type(extension, h)) {
-                    if (!better_by_len(extension, h) && h.type != TL_INVALID) {
+                    if (h.type != TL_INVALID && !better_by_len(extension, h)) {
                         O_t[u]->next = add_adjacency(O_t[u]->next_hop, t, O_t[u]->type_length);
                     }
 
