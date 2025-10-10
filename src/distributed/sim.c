@@ -82,9 +82,9 @@ static void process_event_simple(Calendar *cal, RoutingTable **stl, Event event,
 
         // Advertise to all in-neighbors of u
         for (RoutingTable *e = g_adj[u]; e; e = e->next) {
-            // if (e->destination == v) {
-            //     continue;
-            // }
+            if (e->destination == v) {
+                continue; // skip original sender
+            }
 
             Event next = {
                 .time = event.time,
@@ -151,11 +151,11 @@ static void process_event_complete(Calendar *cal, RoutingTable **stl, Event even
     stl[u]->next_hop = new_hop;     // most prefered from tab_u[v]
 
     // Advertize to all in-neighbors
-    if (tl_compare(old_best, new_best) != 0 || old_hop != new_hop) {
+    if (tl_compare(old_best, new_best) != 0 || (old_hop != new_hop && !tl_is_invalid(new_best))) {
         for (RoutingTable *e = g_adj[u]; e; e = e->next) {
-            // if (old_hop != new_hop && new_hop == e->destination) {
-            //     continue; // don't propagate to original sender
-            // }
+            if (old_hop != new_hop && new_hop == e->destination) {
+                continue; // don't propagate to original sender
+            }
 
             Event next = (Event){
                 .time = event.time,
@@ -217,12 +217,13 @@ void SimuSimple(const char *path, unsigned short t, double d) {
         toggle.fn(g_adj, g_seq, stl, t);
     } else {
         // Print stable routing and elapsed time
-        printf("\nMessages exchanged: %zu\n\n", g_seq);
         print_table(g_adj, stl, "Stable Routing");
+        printf("Messages exchanged: %zu\n\n", g_seq);
         free_cached_adj();
     }
 
     // Clean-up
+    g_seq = 0;
     cal_free(cal);
     clear_table(stl);
 }
@@ -262,7 +263,6 @@ void SimuComplete(const char *path, unsigned short t, double d) {
             .from = t,
         };
 
-        // printf("Sending event from %hu to %hu...\n", t, e->destination);
         schedule(cal, event, d);
     }
 
@@ -273,11 +273,8 @@ void SimuComplete(const char *path, unsigned short t, double d) {
             break;
         }
 
-        // printf("seq: %llu\n", out.seq);
-        // printf("Reading event from %hu to %hu...\n", out.from, out.to);
         process_event_complete(cal, stl, out, d);
     }
-    // cal_print_all_seqs(cal);
 
     if (toggle.fn) {
         toggle.fn(g_adj, g_seq, stl, t);
@@ -291,12 +288,13 @@ void SimuComplete(const char *path, unsigned short t, double d) {
         }
     } else {
         // Print stable routing and elapsed time
-        printf("\nMessages exchanged: %zu\n\n", g_seq);
         print_table(g_adj, stl, "Stable Routing");
+        printf("Messages exchanged: %zu\n\n", g_seq);
         free_cached_adj();
     }
 
     // Clean-up
+    g_seq = 0;
     cal_free(cal);
     clear_table(stl);
     clear_table(tab_stl);
@@ -309,7 +307,6 @@ void SimuCompleteAll(const char *path, double d) {
 
     // Iterate through all possible destinations
     for (unsigned t = 0; t <= 65535u; t++) {
-        // printf("Destination %d\n", t);
         SimuComplete(path, (unsigned short) t, d);
     }
     toggle.fn = NULL;

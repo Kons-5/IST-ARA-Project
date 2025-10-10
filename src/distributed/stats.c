@@ -47,21 +47,25 @@ void AccStats(RoutingTable *adj[], unsigned long seq, RoutingTable *stl[], unsig
     TotalMsgs = TotalMsgs + MsgHist[t];
 }
 
-static double pmf_calc(unsigned long num, unsigned long den) {
+static double CalcPMF(unsigned long num, unsigned long den) {
     return (den == 0) ? 0.0 : (100.0 * (double) num / (double) den);
 }
 
-static void PrintMsgsCCDF(int W) {
-    // MsgHist[t] = number of messages for destination t
-    unsigned long max_m = 0;
-    unsigned long dests = 0;
+static int cmp_longs(const void *a, const void *b) {
+    const unsigned long *x = (const unsigned long *) a;
+    const unsigned long *y = (const unsigned long *) b;
+    if (*x < *y)
+        return -1;
+    if (*x > *y)
+        return 1;
+    return 0;
+}
 
+static void PrintMsgsCCDF(int W) {
+    // collect per-destination message counts (MsgHist[t] > 0)
+    unsigned long dests = 0;
     for (unsigned t = 0; t <= 65535u; ++t) {
-        unsigned long m = MsgHist[t];
-        if (m > 0) {
-            if (m > max_m) {
-                max_m = m;
-            }
+        if (MsgHist[t] > 0) {
             dests++;
         }
     }
@@ -74,31 +78,45 @@ static void PrintMsgsCCDF(int W) {
         return;
     }
 
-    unsigned long *H = (unsigned long *) calloc(max_m + 1, sizeof *H);
-    if (!H) {
+    unsigned long *vals = (unsigned long *) malloc(dests * sizeof *vals);
+    if (!vals) {
         printf("\n");
         return;
     }
 
+    unsigned long k = 0;
     for (unsigned t = 0; t <= 65535u; ++t) {
-        unsigned long m = MsgHist[t];
-        if (m > 0 && m <= max_m)
-            H[m]++;
+        if (MsgHist[t] > 0) {
+            vals[k++] = MsgHist[t]; // exactly the messages when destination was t
+        }
     }
 
-    unsigned long remaining = dests; // #destinations with msgs >= m
-    for (unsigned long m = 1; m <= max_m; ++m) {
-        if (H[m] == 0)
-            continue;
-        double pmf = pmf_calc(H[m], dests);
-        double ccdf = pmf_calc(remaining, dests);
-        printf("%*lu %*.3f%% %*.3f%% %*lu\n", W, m, W, pmf, W, ccdf, W, H[m]);
-        if (remaining >= H[m])
-            remaining -= H[m];
+    // sort ascending and run-length encode
+    qsort(vals, dests, sizeof *vals, cmp_longs);
+
+    unsigned long i = 0;
+    unsigned long remaining = dests; // #destinations with msgs >= current value
+    while (i < dests) {
+        unsigned long v = vals[i];
+        unsigned long j = i + 1;
+        while (j < dests && vals[j] == v) {
+            j++;
+        }
+
+        unsigned long count = j - i;
+        double pmf = CalcPMF(count, dests);
+        double ccdf = CalcPMF(remaining, dests);
+
+        printf("%*lu %*.3f%% %*.3f%% %*lu\n", W, v, W, pmf, W, ccdf, W, count);
+
+        if (remaining >= count) {
+            remaining -= count;
+        }
+        i = j;
     }
     printf("\n");
 
-    free(H);
+    free(vals);
 }
 
 void PrintStatsColumns(int col_width) {
@@ -114,10 +132,10 @@ void PrintStatsColumns(int col_width) {
     // Types
     printf("Types:\n");
     printf("%*s %*s %*s\n", W, "Type", W, "PMF", W, "Count");
-    printf("%*s %*.3f%% %*lu\n", W, "Customer", W, pmf_calc(TypeCount[1], TotalTypes), W, TypeCount[1]);
-    printf("%*s %*.3f%% %*lu\n", W, "Peer", W, pmf_calc(TypeCount[2], TotalTypes), W, TypeCount[2]);
-    printf("%*s %*.3f%% %*lu\n", W, "Provider", W, pmf_calc(TypeCount[3], TotalTypes), W, TypeCount[3]);
-    printf("%*s %*.3f%% %*lu\n", W, "Invalid", W, pmf_calc(TypeCount[4], TotalTypes), W, TypeCount[4]);
+    printf("%*s %*.3f%% %*lu\n", W, "Customer", W, CalcPMF(TypeCount[1], TotalTypes), W, TypeCount[1]);
+    printf("%*s %*.3f%% %*lu\n", W, "Peer", W, CalcPMF(TypeCount[2], TotalTypes), W, TypeCount[2]);
+    printf("%*s %*.3f%% %*lu\n", W, "Provider", W, CalcPMF(TypeCount[3], TotalTypes), W, TypeCount[3]);
+    printf("%*s %*.3f%% %*lu\n", W, "Invalid", W, CalcPMF(TypeCount[4], TotalTypes), W, TypeCount[4]);
     printf("\n");
 
     // Lengths
@@ -128,7 +146,7 @@ void PrintStatsColumns(int col_width) {
         if (LenHist[L] == 0) {
             continue;
         }
-        double pmf = pmf_calc(LenHist[L], TotalLengths);
+        double pmf = CalcPMF(LenHist[L], TotalLengths);
         double ccdf = (TotalLengths == 0) ? 0.0 : (100.0 * (double) remaining / (double) TotalLengths);
 
         printf("%*hu %*.3f%% %*.3f%% %*lu\n", W, (unsigned short) L, W, pmf, W, ccdf, W, LenHist[L]);
