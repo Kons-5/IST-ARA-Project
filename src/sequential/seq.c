@@ -3,6 +3,7 @@
 #include "../../include/sequential/stats.h"
 #include "../../include/sequential/tab.h"
 #include "../../include/sequential/tl.h"
+#include <stdlib.h>
 #include <time.h>
 #include <stdio.h>
 #include <string.h>
@@ -198,7 +199,12 @@ void OptimalTypeLength(const char *path, unsigned short t) {
                 // If extension has better type than head
                 if (better_by_type(extension, h)) {
                     if (h.type != TL_INVALID && !better_by_len(extension, h)) {
-                        O_t[u]->next = add_adjacency(O_t[u]->next_hop, t, O_t[u]->type_length);
+                        if (!O_t[u]->next) {
+                            O_t[u]->next = add_adjacency(O_t[u]->next_hop, t, O_t[u]->type_length);
+                        } else {
+                            O_t[u]->next->type_length = extension;
+                            O_t[u]->next->next_hop = v;
+                        }
                     }
 
                     O_t[u]->type_length = extension;
